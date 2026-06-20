@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import IconPerson from "../SVG/IconPerson";
@@ -17,7 +17,7 @@ const AdminOverView = () => {
   const [departmentCount, setDepartmentCount] = useState(0);
   const [managerCount, setManagerCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
-  const [meetingStats, setMeetingStats] = useState({ total: 0, upcoming: 0, thisMonth: 0 });
+  const [eventStats, setEventStats] = useState({ total: 0, upcoming: 0, thisMonth: 0 });
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -34,23 +34,23 @@ const AdminOverView = () => {
         setManagerCount(countsResult.managerCount);
         setUserCount(countsResult.userCount);
 
-        // Fetch meeting stats
+        // Fetch event stats
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
         const headers = { Authorization: `Bearer ${token}` };
         const [totalRes, upcomingRes, monthRes] = await Promise.all([
-          fetch(`${serverIP}api/meetings?limit=1`, { headers }),
-          fetch(`${serverIP}api/meetings?limit=1&from=${now.toISOString()}`, { headers }),
-          fetch(`${serverIP}api/meetings?limit=1&from=${monthStart}&to=${monthEnd}`, { headers }),
+          fetch(`${serverIP}api/events?limit=1`, { headers }),
+          fetch(`${serverIP}api/events?limit=1&from=${now.toISOString()}`, { headers }),
+          fetch(`${serverIP}api/events?limit=1&from=${monthStart}&to=${monthEnd}`, { headers }),
         ]);
 
         const [totalData, upcomingData, monthData] = await Promise.all([
           totalRes.json(), upcomingRes.json(), monthRes.json()
         ]);
 
-        setMeetingStats({
+        setEventStats({
           total: totalData.pagination?.total || 0,
           upcoming: upcomingData.pagination?.total || 0,
           thisMonth: monthData.pagination?.total || 0,
@@ -89,49 +89,49 @@ const AdminOverView = () => {
             Users
           </Link>
           <Link
-            to="/admin/meetings"
+            to="/admin/events"
             className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
           >
-            Meetings
+            Events
           </Link>
         </div>
       }
     >
       {loading && <ProgressBar />}
 
-      {/* Meeting Stats Row */}
+      {/* Event Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <Link to="/admin/meetings" className="bg-white rounded-xl border border-yellow-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+        <Link to="/admin/events" className="bg-white rounded-xl border border-yellow-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
           <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">{meetingStats.total}</p>
-            <p className="text-xs text-gray-600">Total Meetings</p>
+            <p className="text-2xl font-bold text-gray-900">{eventStats.total}</p>
+            <p className="text-xs text-gray-600">Total Events</p>
           </div>
         </Link>
-        <Link to="/admin/meetings" className="bg-white rounded-xl border border-green-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+        <Link to="/admin/events" className="bg-white rounded-xl border border-green-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
           <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div>
-            <p className="text-2xl font-bold text-green-700">{meetingStats.upcoming}</p>
-            <p className="text-xs text-gray-600">Upcoming Meetings</p>
+            <p className="text-2xl font-bold text-green-700">{eventStats.upcoming}</p>
+            <p className="text-xs text-gray-600">Upcoming Events</p>
           </div>
         </Link>
-        <Link to="/admin/meetings" className="bg-white rounded-xl border border-blue-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+        <Link to="/admin/events" className="bg-white rounded-xl border border-blue-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
           <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
           <div>
-            <p className="text-2xl font-bold text-blue-700">{meetingStats.thisMonth}</p>
-            <p className="text-xs text-gray-600">Meetings This Month</p>
+            <p className="text-2xl font-bold text-blue-700">{eventStats.thisMonth}</p>
+            <p className="text-xs text-gray-600">Events This Month</p>
           </div>
         </Link>
       </div>
@@ -192,15 +192,15 @@ const AdminOverView = () => {
 
       {/* Compact Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-        <div className="card interactive-card cursor-pointer hover:scale-105 transition-transform duration-200" onClick={() => window.location.href = '/admin/meetings'}>
+        <div className="card interactive-card cursor-pointer hover:scale-105 transition-transform duration-200" onClick={() => window.location.href = '/admin/events'}>
           <div className="card-body text-center p-4">
             <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center mx-auto mb-2">
               <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">All Meetings</h3>
-            <p className="text-xs text-gray-600">View and manage all meetings</p>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">All Events</h3>
+            <p className="text-xs text-gray-600">View and manage all events</p>
           </div>
         </div>
 

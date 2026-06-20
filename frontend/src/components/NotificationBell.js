@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+﻿import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../auth";
 import { useNavigate } from "react-router-dom";
 
 const serverIP = process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/";
 
 const typeIcon = {
-  meeting_invite: "📅",
-  meeting_cancelled: "🚫",
-  meeting_updated: "✏️",
+  event_invite: "📅",
+  event_cancelled: "🚫",
+  event_updated: "✏️",
   rsvp_update: "✅",
 };
 
@@ -86,9 +86,9 @@ export default function NotificationBell() {
 
   const handleNotificationClick = async (n) => {
     if (!n.is_read) await markOneRead(n.id);
-    if (n.meeting_id) {
+    if (n.event_id) {
       setOpen(false);
-      navigate("/user/meetings");
+      navigate("/user/events");
     }
   };
 

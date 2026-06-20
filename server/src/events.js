@@ -8,8 +8,8 @@ import { sendEmail } from "./emailService.js";
 
 const router = Router();
 
-// Create upload directory for meeting files
-const uploadDir = path.join(process.cwd(), "uploads", "meetings");
+// Create upload directory for event files
+const uploadDir = path.join(process.cwd(), "uploads", "events");
 fs.mkdirSync(uploadDir, { recursive: true });
 
 // Configure multer for file uploads
@@ -23,13 +23,12 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Allow all file types for now
     cb(null, true);
   }
 });
@@ -37,15 +36,15 @@ const upload = multer({
 // Helper function to convert absolute path to relative path for serving
 const convertToRelativePath = (absolutePath) => {
   const relativePath = path.relative(process.cwd(), absolutePath);
-  return relativePath.replace(/\\/g, '/'); // Convert backslashes to forward slashes
+  return relativePath.replace(/\\/g, '/');
 };
 
 // Helper: insert an in-app notification (fire-and-forget safe)
-const createNotification = async (userId, type, message, meetingId = null) => {
+const createNotification = async (userId, type, message, eventId = null) => {
   try {
     await db.query(
-      `INSERT INTO notifications (user_id, type, message, meeting_id) VALUES ($1, $2, $3, $4)`,
-      [userId, type, message, meetingId]
+      `INSERT INTO notifications (user_id, type, message, event_id) VALUES ($1, $2, $3, $4)`,
+      [userId, type, message, eventId]
     );
   } catch (err) {
     console.error('Failed to create notification:', err.message);
@@ -58,7 +57,7 @@ const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/
   return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
 });
 
-// Helper: generate recurring meeting dates
+// Helper: generate recurring event dates
 const generateRecurringDates = (startDate, endDate, options) => {
   const { frequency = 'weekly', interval = 1, endType = 'count', endDate: recEndDate, count = 5 } = options;
   const duration = endDate.getTime() - startDate.getTime();
@@ -83,7 +82,7 @@ const generateRecurringDates = (startDate, endDate, options) => {
   return dates;
 };
 
-// GET /api/meetings/conflicts - Check for scheduling conflicts
+// GET /api/events/conflicts - Check for scheduling conflicts
 router.get("/conflicts", authenticateUser, async (req, res) => {
   try {
     const { location, start, end, exclude_id } = req.query;
@@ -92,7 +91,7 @@ router.get("/conflicts", authenticateUser, async (req, res) => {
     }
     let query = `
       SELECT id, title, start_time, end_time, location
-      FROM meetings
+      FROM events
       WHERE (status IS NULL OR status != 'cancelled')
         AND start_time < $1 AND end_time > $2
     `;
@@ -115,7 +114,7 @@ router.get("/conflicts", authenticateUser, async (req, res) => {
   }
 });
 
-// GET /api/meetings - List meetings with optional filtering
+// GET /api/events - List events with optional filtering
 router.get("/", authenticateUser, async (req, res) => {
   try {
     const role = req.user.role;
@@ -128,12 +127,11 @@ router.get("/", authenticateUser, async (req, res) => {
 
     // Role-based access control
     if (role !== "admin") {
-      conditions.push(`(m.organizer_id = $${paramIndex} OR EXISTS (SELECT 1 FROM meeting_participants mp WHERE mp.meeting_id = m.id AND mp.user_id = $${paramIndex}))`);
+      conditions.push(`(m.organizer_id = $${paramIndex} OR EXISTS (SELECT 1 FROM event_participants ep WHERE ep.event_id = m.id AND ep.user_id = $${paramIndex}))`);
       params.push(userId);
       paramIndex++;
     }
 
-    // Optional filters
     if (department_id) {
       conditions.push(`m.department_id = $${paramIndex}`);
       params.push(department_id);
@@ -165,19 +163,18 @@ router.get("/", authenticateUser, async (req, res) => {
     }
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    
-    // Calculate pagination
+
     const offset = (parseInt(page) - 1) * parseInt(limit);
     params.push(parseInt(limit), offset);
 
     const query = `
-      SELECT 
+      SELECT
         m.*,
         u.name as organizer_name,
         u.surname as organizer_surname,
         d.name as department_name,
-        (SELECT COUNT(*) FROM meeting_participants mp2 WHERE mp2.meeting_id = m.id AND mp2.attended = TRUE) as attended_count,
-        (SELECT COUNT(*) FROM meeting_participants mp2 WHERE mp2.meeting_id = m.id) as participant_count,
+        (SELECT COUNT(*) FROM event_participants ep2 WHERE ep2.event_id = m.id AND ep2.attended = TRUE) as attended_count,
+        (SELECT COUNT(*) FROM event_participants ep2 WHERE ep2.event_id = m.id) as participant_count,
         COALESCE(json_agg(DISTINCT jsonb_build_object(
           'id', p.id,
           'name', p.name,
@@ -186,19 +183,19 @@ router.get("/", authenticateUser, async (req, res) => {
           'department', pd.name
         )) FILTER (WHERE p.id IS NOT NULL), '[]') as participants,
         COALESCE(json_agg(DISTINCT jsonb_build_object(
-          'id', mf.id,
-          'file_path', mf.file_path,
-          'file_name', mf.file_name,
-          'file_size', mf.file_size,
-          'file_type', mf.file_type
-        )) FILTER (WHERE mf.id IS NOT NULL), '[]') as files
-      FROM meetings m
+          'id', ef.id,
+          'file_path', ef.file_path,
+          'file_name', ef.file_name,
+          'file_size', ef.file_size,
+          'file_type', ef.file_type
+        )) FILTER (WHERE ef.id IS NOT NULL), '[]') as files
+      FROM events m
       LEFT JOIN users u ON m.organizer_id = u.id
       LEFT JOIN departments d ON m.department_id = d.id
-      LEFT JOIN meeting_participants mp ON mp.meeting_id = m.id
-      LEFT JOIN users p ON mp.user_id = p.id
+      LEFT JOIN event_participants ep ON ep.event_id = m.id
+      LEFT JOIN users p ON ep.user_id = p.id
       LEFT JOIN departments pd ON p.department = pd.id
-      LEFT JOIN meeting_files mf ON mf.meeting_id = m.id
+      LEFT JOIN event_files ef ON ef.event_id = m.id
       ${whereClause}
       GROUP BY m.id, u.name, u.surname, d.name
       ORDER BY m.start_time DESC
@@ -206,19 +203,18 @@ router.get("/", authenticateUser, async (req, res) => {
     `;
 
     const result = await db.query(query, params);
-    
-    // Get total count for pagination
+
     const countQuery = `
       SELECT COUNT(DISTINCT m.id) as total
-      FROM meetings m
+      FROM events m
       ${whereClause}
     `;
-    const countParams = params.slice(0, -2); // Remove limit and offset
+    const countParams = params.slice(0, -2);
     const countResult = await db.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].total);
 
     res.json({
-      meetings: result.rows,
+      events: result.rows,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -227,12 +223,12 @@ router.get("/", authenticateUser, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error fetching meetings:", error);
+    console.error("Error fetching events:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST /api/meetings - Create a new meeting
+// POST /api/events - Create a new event
 router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
   try {
     const {
@@ -240,8 +236,8 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
       description,
       department_id,
       location,
-      meeting_number,
-      meeting_chair,
+      event_number,
+      event_chair,
       start_time,
       end_time,
       participants = "[]",
@@ -251,19 +247,16 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
 
     const organizer_id = req.user.id;
 
-    // Validate required fields
     if (!title || !start_time || !end_time) {
       return res.status(400).json({ error: "Title, start_time, and end_time are required" });
     }
 
-    // Validate time logic
     const start = new Date(start_time);
     const end = new Date(end_time);
     if (start >= end) {
       return res.status(400).json({ error: "End time must be after start time" });
     }
 
-    // Parse participants
     let participantIds = [];
     try {
       participantIds = JSON.parse(participants);
@@ -271,17 +264,15 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
       console.warn("Invalid participants JSON:", participants);
     }
 
-    // Helper to add participants to a meeting
-    const addParticipants = async (meetingId, ids) => {
+    const addParticipants = async (eventId, ids) => {
       if (!Array.isArray(ids) || ids.length === 0) return;
       const values = ids.map((uid, idx) => `($1, $${idx + 2})`).join(", ");
       await db.query(
-        `INSERT INTO meeting_participants (meeting_id, user_id) VALUES ${values}`,
-        [meetingId, ...ids]
+        `INSERT INTO event_participants (event_id, user_id) VALUES ${values}`,
+        [eventId, ...ids]
       );
     };
 
-    // Handle recurring meetings
     const isRecurring = recurring === 'true' || recurring === true;
     let parsedRecurringOptions = {};
     try { parsedRecurringOptions = JSON.parse(recurringOptions); } catch (e) {}
@@ -289,106 +280,100 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
     if (isRecurring && parsedRecurringOptions.frequency) {
       const recurringGroupId = generateUUID();
       const dates = generateRecurringDates(start, end, parsedRecurringOptions);
-      const createdMeetings = [];
+      const createdEvents = [];
 
       for (const { start: s, end: e } of dates) {
-        const mr = await db.query(
-          `INSERT INTO meetings (title, description, organizer_id, department_id, location, meeting_number, meeting_chair, start_time, end_time, recurring_group_id)
+        const er = await db.query(
+          `INSERT INTO events (title, description, organizer_id, department_id, location, event_number, event_chair, start_time, end_time, recurring_group_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-          [title, description, organizer_id, department_id || null, location, meeting_number || null, meeting_chair || null, s.toISOString(), e.toISOString(), recurringGroupId]
+          [title, description, organizer_id, department_id || null, location, event_number || null, event_chair || null, s.toISOString(), e.toISOString(), recurringGroupId]
         );
-        const m = mr.rows[0];
-        await addParticipants(m.id, participantIds);
-        createdMeetings.push(m);
+        const ev = er.rows[0];
+        await addParticipants(ev.id, participantIds);
+        createdEvents.push(ev);
       }
 
-      return res.status(201).json({ meetings: createdMeetings, recurring_group_id: recurringGroupId });
+      return res.status(201).json({ events: createdEvents, recurring_group_id: recurringGroupId });
     }
 
-    // Create the meeting
-    const meetingResult = await db.query(
-      `INSERT INTO meetings (title, description, organizer_id, department_id, location, meeting_number, meeting_chair, start_time, end_time)
+    const eventResult = await db.query(
+      `INSERT INTO events (title, description, organizer_id, department_id, location, event_number, event_chair, start_time, end_time)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [title, description, organizer_id, department_id || null, location, meeting_number || null, meeting_chair || null, start_time, end_time]
+      [title, description, organizer_id, department_id || null, location, event_number || null, event_chair || null, start_time, end_time]
     );
 
-    const meeting = meetingResult.rows[0];
+    const event = eventResult.rows[0];
 
-    await addParticipants(meeting.id, participantIds);
+    await addParticipants(event.id, participantIds);
 
-    // In-app notifications for invited participants
     for (const uid of participantIds) {
       if (uid !== organizer_id) {
-        await createNotification(uid, 'meeting_invite', `You've been invited to "${title}"`, meeting.id);
+        await createNotification(uid, 'event_invite', `You've been invited to "${title}"`, event.id);
       }
     }
 
-    // Handle file uploads
     if (req.files && req.files.length > 0) {
       const fileInserts = req.files.map((file) => {
         const relativePath = convertToRelativePath(file.path);
         return db.query(
-          `INSERT INTO meeting_files (meeting_id, file_path, file_name, file_size, file_type) 
+          `INSERT INTO event_files (event_id, file_path, file_name, file_size, file_type)
            VALUES ($1, $2, $3, $4, $5)`,
-          [meeting.id, relativePath, file.originalname, file.size, file.mimetype]
+          [event.id, relativePath, file.originalname, file.size, file.mimetype]
         );
       });
-      
+
       await Promise.all(fileInserts);
     }
 
-    // Optionally send creation emails (disabled by default)
     if (process.env.SEND_CREATION_EMAIL === 'true' && Array.isArray(participantIds) && participantIds.length > 0) {
       try {
         const userResult = await db.query(
           `SELECT email, name, surname FROM users WHERE id = ANY($1::int[])`,
           [participantIds]
         );
-        
+
         const users = userResult.rows.filter(user => user.email);
-        
+
         if (users.length > 0) {
-          const subject = `Meeting Invitation: ${title}`;
+          const subject = `Event Invitation: ${title}`;
           const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #2563eb;">📅 Meeting Invitation</h2>
-              <p>You have been invited to a meeting:</p>
-              
+              <h2 style="color: #2563eb;">📅 Event Invitation</h2>
+              <p>You have been invited to an event:</p>
+
               <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="margin-top: 0; color: #1e293b;">${title}</h3>
                 <p><strong>When:</strong> ${new Date(start_time).toLocaleString()} - ${new Date(end_time).toLocaleString()}</p>
                 <p><strong>Location:</strong> ${location || "TBD"}</p>
                 ${description ? `<p><strong>Description:</strong> ${description}</p>` : ""}
               </div>
-              
+
               <p>Please mark your calendar and prepare accordingly.</p>
             </div>
           `;
-          
-          // Send emails asynchronously
+
           Promise.all(
-            users.map(user => 
-              sendEmail(user.email, subject, "", html).catch(err => 
+            users.map(user =>
+              sendEmail(user.email, subject, "", html).catch(err =>
                 console.error(`Failed to send email to ${user.email}:`, err)
               )
             )
           );
         }
       } catch (emailError) {
-        console.error("Error sending meeting invitations:", emailError);
-        // Don't fail the meeting creation if email fails
+        console.error("Error sending event invitations:", emailError);
       }
     }
 
-    res.status(201).json(meeting);
+    res.status(201).json(event);
   } catch (error) {
-    console.error("Error creating meeting:", error);
-    res.status(500).json({ error: "Failed to create meeting" });
+    console.error("Error creating event:", error);
+    res.status(500).json({ error: "Failed to create event" });
   }
 });
 
-// GET /api/meetings/:id - Get a specific meeting
+// GET /api/events/:id - Get a specific event
 router.get("/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
@@ -396,7 +381,7 @@ router.get("/:id", authenticateUser, async (req, res) => {
     const userId = req.user.id;
 
     const query = `
-      SELECT 
+      SELECT
         m.*,
         u.name as organizer_name,
         u.surname as organizer_surname,
@@ -407,58 +392,56 @@ router.get("/:id", authenticateUser, async (req, res) => {
           'surname', p.surname,
           'email', p.email,
           'department', pd.name,
-          'rsvp_status', mp.rsvp_status,
-          'attended', mp.attended
+          'rsvp_status', ep.rsvp_status,
+          'attended', ep.attended
         )) FILTER (WHERE p.id IS NOT NULL), '[]') as participants,
         COALESCE(json_agg(DISTINCT jsonb_build_object(
-          'id', mf.id,
-          'file_path', mf.file_path,
-          'file_name', mf.file_name,
-          'file_size', mf.file_size,
-          'file_type', mf.file_type
-        )) FILTER (WHERE mf.id IS NOT NULL), '[]') as files
-      FROM meetings m
+          'id', ef.id,
+          'file_path', ef.file_path,
+          'file_name', ef.file_name,
+          'file_size', ef.file_size,
+          'file_type', ef.file_type
+        )) FILTER (WHERE ef.id IS NOT NULL), '[]') as files
+      FROM events m
       LEFT JOIN users u ON m.organizer_id = u.id
       LEFT JOIN departments d ON m.department_id = d.id
-      LEFT JOIN meeting_participants mp ON mp.meeting_id = m.id
-      LEFT JOIN users p ON mp.user_id = p.id
+      LEFT JOIN event_participants ep ON ep.event_id = m.id
+      LEFT JOIN users p ON ep.user_id = p.id
       LEFT JOIN departments pd ON p.department = pd.id
-      LEFT JOIN meeting_files mf ON mf.meeting_id = m.id
+      LEFT JOIN event_files ef ON ef.event_id = m.id
       WHERE m.id = $1
       GROUP BY m.id, u.name, u.surname, d.name
     `;
 
     const result = await db.query(query, [id]);
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Meeting not found" });
+      return res.status(404).json({ error: "Event not found" });
     }
 
-    const meeting = result.rows[0];
+    const event = result.rows[0];
 
-    // Check access permissions
-    if (role !== "admin" && meeting.organizer_id !== userId) {
-      // Check if user is a participant
-      const isParticipant = meeting.participants.some(p => p.id === userId);
+    if (role !== "admin" && event.organizer_id !== userId) {
+      const isParticipant = event.participants.some(p => p.id === userId);
       if (!isParticipant) {
         return res.status(403).json({ error: "Access denied" });
       }
     }
 
-    res.json(meeting);
+    res.json(event);
   } catch (error) {
-    console.error("Error fetching meeting:", error);
+    console.error("Error fetching event:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// PUT /api/meetings/:id - Update a meeting
+// PUT /api/events/:id - Update an event
 router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => {
   try {
     const { id } = req.params;
     const role = req.user.role;
     const userId = req.user.id;
-    
+
     const {
       title,
       description,
@@ -470,23 +453,21 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
       remove_file_ids = "[]"
     } = req.body;
 
-    // Check if meeting exists and user has permission to edit
-    const existingMeeting = await db.query(
-      `SELECT organizer_id FROM meetings WHERE id = $1`,
+    const existingEvent = await db.query(
+      `SELECT organizer_id FROM events WHERE id = $1`,
       [id]
     );
 
-    if (existingMeeting.rows.length === 0) {
-      return res.status(404).json({ error: "Meeting not found" });
+    if (existingEvent.rows.length === 0) {
+      return res.status(404).json({ error: "Event not found" });
     }
 
-    if (role !== "admin" && existingMeeting.rows[0].organizer_id !== userId) {
-      return res.status(403).json({ error: "Only the organizer or admin can edit this meeting" });
+    if (role !== "admin" && existingEvent.rows[0].organizer_id !== userId) {
+      return res.status(403).json({ error: "Only the organizer or admin can edit this event" });
     }
 
-    // Update meeting details
     const updateResult = await db.query(
-      `UPDATE meetings SET
+      `UPDATE events SET
         title = COALESCE($2, title),
         description = COALESCE($3, description),
         department_id = COALESCE($4, department_id),
@@ -498,9 +479,8 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
       [id, title, description, department_id, location, start_time, end_time]
     );
 
-    const updatedMeeting = updateResult.rows[0];
+    const updatedEvent = updateResult.rows[0];
 
-    // Update participants if provided
     let participantIds = [];
     try {
       participantIds = JSON.parse(participants);
@@ -509,64 +489,59 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
     }
 
     if (Array.isArray(participantIds)) {
-      // Remove existing participants
-      await db.query(`DELETE FROM meeting_participants WHERE meeting_id = $1`, [id]);
-      
-      // Add new participants
+      await db.query(`DELETE FROM event_participants WHERE event_id = $1`, [id]);
+
       if (participantIds.length > 0) {
-        const participantValues = participantIds.map((userId, index) => 
+        const participantValues = participantIds.map((userId, index) =>
           `($1, $${index + 2})`
         ).join(", ");
-        
+
         await db.query(
-          `INSERT INTO meeting_participants (meeting_id, user_id) VALUES ${participantValues}`,
+          `INSERT INTO event_participants (event_id, user_id) VALUES ${participantValues}`,
           [id, ...participantIds]
         );
       }
     }
 
-    // Handle new file uploads
     if (req.files && req.files.length > 0) {
       const fileInserts = req.files.map((file) => {
         const relativePath = convertToRelativePath(file.path);
         return db.query(
-          `INSERT INTO meeting_files (meeting_id, file_path, file_name, file_size, file_type) 
+          `INSERT INTO event_files (event_id, file_path, file_name, file_size, file_type)
            VALUES ($1, $2, $3, $4, $5)`,
           [id, relativePath, file.originalname, file.size, file.mimetype]
         );
       });
-      
+
       await Promise.all(fileInserts);
     }
 
-    // Remove requested files
     try {
       let removeIds = [];
       try { removeIds = JSON.parse(remove_file_ids || "[]"); } catch {}
       if (Array.isArray(removeIds) && removeIds.length > 0) {
         await db.query(
-          `DELETE FROM meeting_files WHERE meeting_id = $1 AND id = ANY($2::int[])`,
+          `DELETE FROM event_files WHERE event_id = $1 AND id = ANY($2::int[])`,
           [id, removeIds]
         );
       }
     } catch (e) {
-      console.error("Error removing meeting files:", e);
+      console.error("Error removing event files:", e);
     }
 
-    // Send update notification emails asynchronously (don't block the response)
     if (process.env.SEND_CREATION_EMAIL === 'true') {
       (async () => {
         try {
           const participantResult = await db.query(
             `SELECT u.name, u.surname, u.email
-             FROM meeting_participants mp
-             JOIN users u ON u.id = mp.user_id
-             WHERE mp.meeting_id = $1 AND u.email IS NOT NULL AND u.email != ''`,
+             FROM event_participants ep
+             JOIN users u ON u.id = ep.user_id
+             WHERE ep.event_id = $1 AND u.email IS NOT NULL AND u.email != ''`,
             [id]
           );
 
           if (participantResult.rows.length > 0) {
-            const subject = `[Sun Valley Meeting Point] Meeting Updated: ${updatedMeeting.title}`;
+            const subject = `[Sun Valley Event Hub] Event Updated: ${updatedEvent.title}`;
             const formatDT = (dt) => dt ? new Date(dt).toLocaleString('en-GB', {
               year: 'numeric', month: '2-digit', day: '2-digit',
               hour: '2-digit', minute: '2-digit', hour12: false
@@ -575,16 +550,16 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
             const html = `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background-color: #2563eb; padding: 20px; border-radius: 8px 8px 0 0;">
-                  <h2 style="color: white; margin: 0;">📅 Meeting Updated</h2>
+                  <h2 style="color: white; margin: 0;">📅 Event Updated</h2>
                 </div>
                 <div style="background-color: #f8fafc; padding: 20px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0;">
-                  <p>A meeting you are attending has been updated:</p>
+                  <p>An event you are attending has been updated:</p>
                   <div style="background-color: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <h3 style="margin-top: 0; color: #1e293b;">${updatedMeeting.title}</h3>
-                    <p><strong>Start:</strong> ${formatDT(updatedMeeting.start_time)}</p>
-                    <p><strong>End:</strong> ${formatDT(updatedMeeting.end_time)}</p>
-                    <p><strong>Location:</strong> ${updatedMeeting.location || 'TBD'}</p>
-                    ${updatedMeeting.description ? `<p><strong>Description:</strong> ${updatedMeeting.description}</p>` : ''}
+                    <h3 style="margin-top: 0; color: #1e293b;">${updatedEvent.title}</h3>
+                    <p><strong>Start:</strong> ${formatDT(updatedEvent.start_time)}</p>
+                    <p><strong>End:</strong> ${formatDT(updatedEvent.end_time)}</p>
+                    <p><strong>Location:</strong> ${updatedEvent.location || 'TBD'}</p>
+                    ${updatedEvent.description ? `<p><strong>Description:</strong> ${updatedEvent.description}</p>` : ''}
                   </div>
                   <p style="color: #64748b; font-size: 13px; margin-top: 16px;">Please update your calendar accordingly.</p>
                 </div>
@@ -602,53 +577,51 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
                   })
               )
             );
-            console.log(`📧 Meeting update emails: ${sent} sent, ${failed} failed`);
+            console.log(`📧 Event update emails: ${sent} sent, ${failed} failed`);
           }
         } catch (emailErr) {
-          console.error('Error sending meeting update emails:', emailErr.message);
+          console.error('Error sending event update emails:', emailErr.message);
         }
       })();
     }
 
-    res.json(updatedMeeting);
+    res.json(updatedEvent);
   } catch (error) {
-    console.error("Error updating meeting:", error);
-    res.status(500).json({ error: "Failed to update meeting" });
+    console.error("Error updating event:", error);
+    res.status(500).json({ error: "Failed to update event" });
   }
 });
 
-// DELETE /api/meetings/:id - Delete a meeting
+// DELETE /api/events/:id - Delete an event
 router.delete("/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
     const role = req.user.role;
     const userId = req.user.id;
 
-    // Check if meeting exists and user has permission to delete
-    const existingMeeting = await db.query(
-      `SELECT organizer_id FROM meetings WHERE id = $1`,
+    const existingEvent = await db.query(
+      `SELECT organizer_id FROM events WHERE id = $1`,
       [id]
     );
 
-    if (existingMeeting.rows.length === 0) {
-      return res.status(404).json({ error: "Meeting not found" });
+    if (existingEvent.rows.length === 0) {
+      return res.status(404).json({ error: "Event not found" });
     }
 
-    if (role !== "admin" && existingMeeting.rows[0].organizer_id !== userId) {
-      return res.status(403).json({ error: "Only the organizer or admin can delete this meeting" });
+    if (role !== "admin" && existingEvent.rows[0].organizer_id !== userId) {
+      return res.status(403).json({ error: "Only the organizer or admin can delete this event" });
     }
 
-    // Delete the meeting (cascade will handle related records)
-    await db.query(`DELETE FROM meetings WHERE id = $1`, [id]);
+    await db.query(`DELETE FROM events WHERE id = $1`, [id]);
 
-    res.json({ success: true, message: "Meeting deleted successfully" });
+    res.json({ success: true, message: "Event deleted successfully" });
   } catch (error) {
-    console.error("Error deleting meeting:", error);
-    res.status(500).json({ error: "Failed to delete meeting" });
+    console.error("Error deleting event:", error);
+    res.status(500).json({ error: "Failed to delete event" });
   }
 });
 
-// PUT /api/meetings/:id/cancel - Cancel a meeting
+// PUT /api/events/:id/cancel - Cancel an event
 router.put("/:id/cancel", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
@@ -656,46 +629,45 @@ router.put("/:id/cancel", authenticateUser, async (req, res) => {
     const userId = req.user.id;
 
     const existing = await db.query(
-      `SELECT organizer_id, title, start_time, location FROM meetings WHERE id = $1`,
+      `SELECT organizer_id, title, start_time, location FROM events WHERE id = $1`,
       [id]
     );
-    if (existing.rows.length === 0) return res.status(404).json({ error: "Meeting not found" });
+    if (existing.rows.length === 0) return res.status(404).json({ error: "Event not found" });
     if (role !== "admin" && existing.rows[0].organizer_id !== userId) {
-      return res.status(403).json({ error: "Only the organizer or admin can cancel this meeting" });
+      return res.status(403).json({ error: "Only the organizer or admin can cancel this event" });
     }
 
-    const meeting = existing.rows[0];
+    const event = existing.rows[0];
     const result = await db.query(
-      `UPDATE meetings SET status = 'cancelled' WHERE id = $1 RETURNING *`,
+      `UPDATE events SET status = 'cancelled' WHERE id = $1 RETURNING *`,
       [id]
     );
 
-    // In-app notifications for all participants
     const participantRows = await db.query(
-      `SELECT user_id FROM meeting_participants WHERE meeting_id = $1`,
+      `SELECT user_id FROM event_participants WHERE event_id = $1`,
       [id]
     );
     for (const row of participantRows.rows) {
-      await createNotification(row.user_id, 'meeting_cancelled', `Meeting "${meeting.title}" has been cancelled`, parseInt(id));
+      await createNotification(row.user_id, 'event_cancelled', `Event "${event.title}" has been cancelled`, parseInt(id));
     }
 
     if (process.env.SEND_CREATION_EMAIL === 'true') {
       (async () => {
         try {
           const pr = await db.query(
-            `SELECT u.name, u.email FROM meeting_participants mp JOIN users u ON u.id = mp.user_id WHERE mp.meeting_id = $1 AND u.email IS NOT NULL AND u.email != ''`,
+            `SELECT u.name, u.email FROM event_participants ep JOIN users u ON u.id = ep.user_id WHERE ep.event_id = $1 AND u.email IS NOT NULL AND u.email != ''`,
             [id]
           );
           if (pr.rows.length > 0) {
-            const subject = `[Sun Valley Meeting Point] Meeting Cancelled: ${meeting.title}`;
+            const subject = `[Sun Valley Event Hub] Event Cancelled: ${event.title}`;
             const html = `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; border: 1px solid #fecaca;">
-                  <h2 style="margin: 0 0 8px; color: #991b1b;">Meeting Cancelled</h2>
-                  <p>The following meeting has been cancelled:</p>
-                  <h3>${meeting.title}</h3>
-                  <p><strong>Was scheduled for:</strong> ${new Date(meeting.start_time).toLocaleString()}</p>
-                  ${meeting.location ? `<p><strong>Location:</strong> ${meeting.location}</p>` : ''}
+                  <h2 style="margin: 0 0 8px; color: #991b1b;">Event Cancelled</h2>
+                  <p>The following event has been cancelled:</p>
+                  <h3>${event.title}</h3>
+                  <p><strong>Was scheduled for:</strong> ${new Date(event.start_time).toLocaleString()}</p>
+                  ${event.location ? `<p><strong>Location:</strong> ${event.location}</p>` : ''}
                 </div>
               </div>`;
             await Promise.all(pr.rows.map(u =>
@@ -710,12 +682,12 @@ router.put("/:id/cancel", authenticateUser, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error cancelling meeting:", error);
-    res.status(500).json({ error: "Failed to cancel meeting" });
+    console.error("Error cancelling event:", error);
+    res.status(500).json({ error: "Failed to cancel event" });
   }
 });
 
-// PUT /api/meetings/:id/rsvp - Update participant RSVP status
+// PUT /api/events/:id/rsvp - Update participant RSVP status
 router.put("/:id/rsvp", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
@@ -727,23 +699,22 @@ router.put("/:id/rsvp", authenticateUser, async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE meeting_participants SET rsvp_status = $1 WHERE meeting_id = $2 AND user_id = $3 RETURNING *`,
+      `UPDATE event_participants SET rsvp_status = $1 WHERE event_id = $2 AND user_id = $3 RETURNING *`,
       [status, id, userId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "You are not a participant of this meeting" });
+      return res.status(404).json({ error: "You are not a participant of this event" });
     }
 
-    // Notify the organizer about the RSVP decision
-    const mtgRow = await db.query(`SELECT organizer_id, title FROM meetings WHERE id = $1`, [id]);
-    if (mtgRow.rows.length > 0) {
-      const { organizer_id, title: mtgTitle } = mtgRow.rows[0];
+    const evRow = await db.query(`SELECT organizer_id, title FROM events WHERE id = $1`, [id]);
+    if (evRow.rows.length > 0) {
+      const { organizer_id, title: evTitle } = evRow.rows[0];
       if (organizer_id !== userId) {
         const userRow = await db.query(`SELECT name, surname FROM users WHERE id = $1`, [userId]);
         const name = userRow.rows[0] ? `${userRow.rows[0].name} ${userRow.rows[0].surname}` : 'Someone';
         const label = status === 'accepted' ? 'accepted' : status === 'declined' ? 'declined' : 'updated their RSVP for';
-        await createNotification(organizer_id, 'rsvp_update', `${name} ${label} the invitation to "${mtgTitle}"`, parseInt(id));
+        await createNotification(organizer_id, 'rsvp_update', `${name} ${label} the invitation to "${evTitle}"`, parseInt(id));
       }
     }
 
@@ -754,7 +725,7 @@ router.put("/:id/rsvp", authenticateUser, async (req, res) => {
   }
 });
 
-// PUT /api/meetings/:id/attendance - Mark who actually attended (organizer or admin only)
+// PUT /api/events/:id/attendance - Mark who actually attended (organizer or admin only)
 router.put("/:id/attendance", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
@@ -766,36 +737,34 @@ router.put("/:id/attendance", authenticateUser, async (req, res) => {
       return res.status(400).json({ error: "attendance must be an array" });
     }
 
-    const existing = await db.query(`SELECT organizer_id, title, end_time FROM meetings WHERE id = $1`, [id]);
-    if (existing.rows.length === 0) return res.status(404).json({ error: "Meeting not found" });
+    const existing = await db.query(`SELECT organizer_id, title, end_time FROM events WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: "Event not found" });
 
-    const meeting = existing.rows[0];
-    if (role !== "admin" && meeting.organizer_id !== userId) {
+    const event = existing.rows[0];
+    if (role !== "admin" && event.organizer_id !== userId) {
       return res.status(403).json({ error: "Only the organizer or admin can mark attendance" });
     }
-    if (new Date(meeting.end_time) > new Date()) {
-      return res.status(400).json({ error: "Cannot mark attendance before the meeting has ended" });
+    if (new Date(event.end_time) > new Date()) {
+      return res.status(400).json({ error: "Cannot mark attendance before the event has ended" });
     }
 
     for (const { user_id, attended } of attendance) {
       await db.query(
-        `UPDATE meeting_participants SET attended = $1 WHERE meeting_id = $2 AND user_id = $3`,
+        `UPDATE event_participants SET attended = $1 WHERE event_id = $2 AND user_id = $3`,
         [attended === true ? true : attended === false ? false : null, id, user_id]
       );
     }
 
-    // Notify each participant of their recorded attendance
     for (const { user_id, attended } of attendance) {
       if (attended === true) {
-        await createNotification(user_id, 'meeting_updated', `Your attendance was recorded for "${meeting.title}"`, parseInt(id));
+        await createNotification(user_id, 'event_updated', `Your attendance was recorded for "${event.title}"`, parseInt(id));
       }
     }
 
-    // Return updated participant list
     const result = await db.query(
-      `SELECT mp.user_id, mp.rsvp_status, mp.attended, u.name, u.surname
-       FROM meeting_participants mp JOIN users u ON u.id = mp.user_id
-       WHERE mp.meeting_id = $1`,
+      `SELECT ep.user_id, ep.rsvp_status, ep.attended, u.name, u.surname
+       FROM event_participants ep JOIN users u ON u.id = ep.user_id
+       WHERE ep.event_id = $1`,
       [id]
     );
     res.json({ success: true, participants: result.rows });
@@ -805,7 +774,7 @@ router.put("/:id/attendance", authenticateUser, async (req, res) => {
   }
 });
 
-// PUT /api/meetings/:id/notes - Update meeting notes (organizer or admin only)
+// PUT /api/events/:id/notes - Update event notes (organizer or admin only)
 router.put("/:id/notes", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
@@ -813,14 +782,14 @@ router.put("/:id/notes", authenticateUser, async (req, res) => {
     const role = req.user.role;
     const userId = req.user.id;
 
-    const existing = await db.query(`SELECT organizer_id FROM meetings WHERE id = $1`, [id]);
-    if (existing.rows.length === 0) return res.status(404).json({ error: "Meeting not found" });
+    const existing = await db.query(`SELECT organizer_id FROM events WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: "Event not found" });
     if (role !== "admin" && existing.rows[0].organizer_id !== userId) {
-      return res.status(403).json({ error: "Only the organizer or admin can edit meeting notes" });
+      return res.status(403).json({ error: "Only the organizer or admin can edit event notes" });
     }
 
     const result = await db.query(
-      `UPDATE meetings SET notes = $1 WHERE id = $2 RETURNING notes`,
+      `UPDATE events SET notes = $1 WHERE id = $2 RETURNING notes`,
       [notes || null, id]
     );
     res.json({ notes: result.rows[0].notes });
@@ -830,42 +799,40 @@ router.put("/:id/notes", authenticateUser, async (req, res) => {
   }
 });
 
-// POST /api/meetings/send-notifications - Send email notifications to meeting participants
+// POST /api/events/send-notifications - Send email notifications to event participants
 router.post("/send-notifications", authenticateUser, async (req, res) => {
   try {
     const {
-      meetingId,
+      eventId,
       participants,
       subject,
       message,
-      meetingTitle,
+      eventTitle,
       startTime,
       endTime,
       location,
       description
     } = req.body;
 
-    // Validate required fields
-    if (!meetingId || !participants || !Array.isArray(participants) || participants.length === 0) {
-      return res.status(400).json({ error: "Meeting ID and participants are required" });
+    if (!eventId || !participants || !Array.isArray(participants) || participants.length === 0) {
+      return res.status(400).json({ error: "Event ID and participants are required" });
     }
 
     if (!subject || !message) {
       return res.status(400).json({ error: "Subject and message are required" });
     }
 
-    // Get participant details
     const participantIds = participants.map(id => parseInt(id)).filter(id => !isNaN(id));
     if (participantIds.length === 0) {
       return res.status(400).json({ error: "No valid participant IDs provided" });
     }
 
     const participantQuery = `
-      SELECT id, name, surname, email 
-      FROM users 
+      SELECT id, name, surname, email
+      FROM users
       WHERE id = ANY($1) AND email IS NOT NULL AND email != ''
     `;
-    
+
     const participantResult = await db.query(participantQuery, [participantIds]);
     const participantsWithEmail = participantResult.rows;
 
@@ -873,25 +840,10 @@ router.post("/send-notifications", authenticateUser, async (req, res) => {
       return res.status(400).json({ error: "No participants with valid email addresses found" });
     }
 
-    // Format meeting details for email
-    const meetingDetails = {
-      title: meetingTitle || 'Meeting',
-      startTime: startTime ? new Date(startTime).toLocaleString('en-GB', {
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-      }) : 'TBD',
-      endTime: endTime ? new Date(endTime).toLocaleString('en-GB', {
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-      }) : 'TBD',
-      location: location || 'TBD',
-      description: description || 'No description provided'
-    };
-
-    // Prefix subject with brand if not already present
-    const brandedSubject = subject && subject.startsWith('[Sun Valley Meeting Point]')
+    const brandedSubject = subject && subject.startsWith('[Sun Valley Event Hub]')
       ? subject
-      : `[Sun Valley Meeting Point] ${subject}`;
+      : `[Sun Valley Event Hub] ${subject}`;
 
-    // Prepare HTML email content: only message from organizer; no end time
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background-color: #fef3c7; padding: 18px; border-radius: 8px; border: 1px solid #fde68a;">
@@ -901,10 +853,8 @@ router.post("/send-notifications", authenticateUser, async (req, res) => {
       </div>
     `;
 
-    // Prepare plain text content: only organizer message, no end time
     const textContent = `Message from Organizer:\n\n${message}`;
 
-    // Send emails to all participants
     const emailPromises = participantsWithEmail.map(async (participant) => {
       try {
         const info = await sendEmail(
@@ -926,7 +876,7 @@ router.post("/send-notifications", authenticateUser, async (req, res) => {
     const successfulEmails = results.filter(r => r.accepted && !r.rejected);
     const failedEmails = results.filter(r => r.rejected || !r.accepted);
 
-    console.log(`📧 Meeting notification emails sent: ${successfulEmails.length} successful, ${failedEmails.length} failed`);
+    console.log(`📧 Event notification emails sent: ${successfulEmails.length} successful, ${failedEmails.length} failed`);
 
     res.json({
       success: true,
@@ -940,7 +890,7 @@ router.post("/send-notifications", authenticateUser, async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error sending meeting notifications:", error);
+    console.error("Error sending event notifications:", error);
     res.status(500).json({ error: "Failed to send email notifications" });
   }
 });

@@ -6,7 +6,7 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10);
 const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : SMTP_PORT === 465;
 const SMTP_USER = process.env.SMTP_USER || "ticket@sunvalleycyprus.com";
 const SMTP_PASS = process.env.SMTP_PASS || "yoazetcijinrcyph";
-const SMTP_FROM = process.env.SMTP_FROM || `Sun Valley Meeting Point <${SMTP_USER}>`;
+const SMTP_FROM = process.env.SMTP_FROM || `Sun Valley Event Hub <${SMTP_USER}>`;
 
 const transporter = nodemailer.createTransport({
   host: SMTP_HOST,

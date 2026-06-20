@@ -116,15 +116,15 @@ router.delete("/:id", authenticateUser, async (req, res) => {
       return res.status(404).json({ message: "Location not found" });
     }
 
-    // Check if location is being used in any meetings
-    const meetingsUsingLocation = await db.query(
-      "SELECT id FROM meetings WHERE location = (SELECT name FROM locations WHERE id = $1)",
+    // Check if location is being used in any events
+    const eventsUsingLocation = await db.query(
+      "SELECT id FROM events WHERE location = (SELECT name FROM locations WHERE id = $1)",
       [id]
     );
 
-    if (meetingsUsingLocation.rows.length > 0) {
-      return res.status(400).json({ 
-        message: "Cannot delete location. It is being used in existing meetings." 
+    if (eventsUsingLocation.rows.length > 0) {
+      return res.status(400).json({
+        message: "Cannot delete location. It is being used in existing events."
       });
     }
 

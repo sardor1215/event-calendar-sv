@@ -1,4 +1,4 @@
-// Input validation utilities
+﻿// Input validation utilities
 export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -21,7 +21,7 @@ export const sanitizeInput = (input) => {
     .trim();
 };
 
-export const validateMeetingData = (data) => {
+export const validateEventData = (data) => {
   const errors = {};
 
   if (!data.title || data.title.trim().length < 3) {
@@ -78,14 +78,14 @@ export const validateUserData = (data) => {
   return errors;
 };
 
-export const sanitizeMeetingData = (data) => {
+export const sanitizeEventData = (data) => {
   return {
     ...data,
     title: sanitizeInput(data.title || ''),
     description: sanitizeInput(data.description || ''),
     location: sanitizeInput(data.location || ''),
-    meeting_number: sanitizeInput(data.meeting_number || ''),
-    meeting_chair: sanitizeInput(data.meeting_chair || '')
+    event_number: sanitizeInput(data.event_number || ''),
+    event_chair: sanitizeInput(data.event_chair || '')
   };
 };
 

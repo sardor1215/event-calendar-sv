@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useAuth } from "../../auth";
 import { useNavigate, Link } from "react-router-dom";
 import Layout from "../Layout";
@@ -263,10 +263,10 @@ const AdminCategoriesPage = () => {
             Users
           </Link>
           <Link
-            to="/admin/meetings"
+            to="/admin/events"
             className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
           >
-            Meetings
+            Events
           </Link>
         </div>
       }

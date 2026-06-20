@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
@@ -68,19 +68,19 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="relative h-[100vh] flex items-center justify-center px-5 lg:px-0 overflow-hidden bg-[#1e3a8a]">
+    <div className="relative h-[100vh] flex items-center justify-center px-5 lg:px-0 overflow-hidden bg-[#78350f]">
       {/* Static background circles */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute w-[180vh] h-[180vh] -bottom-[120vh] -left-[20vh] bg-[#60a5fa] rounded-[50%] opacity-20"></div>
-        <div className="absolute w-[160vh] h-[160vh] -bottom-[100vh] -left-[10vh] bg-[#3b82f6] rounded-[50%] opacity-30"></div>
-        <div className="absolute w-[140vh] h-[140vh] -bottom-[80vh] left-0 bg-[#2563eb] rounded-[50%] opacity-40"></div>
-        <div className="absolute w-[120vh] h-[120vh] -bottom-[60vh] left-[10vh] bg-[#1d4ed8] rounded-[50%] opacity-50"></div>
-        <div className="absolute w-[100vh] h-[100vh] -bottom-[40vh] left-[20vh] bg-[#1e40af] rounded-[50%] opacity-60"></div>
-        <div className="absolute w-[80vh] h-[80vh] -bottom-[20vh] left-[30vh] bg-[#1e3a8a] rounded-[50%] opacity-70"></div>
+        <div className="absolute w-[180vh] h-[180vh] -bottom-[120vh] -left-[20vh] bg-[#fbbf24] rounded-[50%] opacity-20"></div>
+        <div className="absolute w-[160vh] h-[160vh] -bottom-[100vh] -left-[10vh] bg-[#f59e0b] rounded-[50%] opacity-30"></div>
+        <div className="absolute w-[140vh] h-[140vh] -bottom-[80vh] left-0 bg-[#d97706] rounded-[50%] opacity-40"></div>
+        <div className="absolute w-[120vh] h-[120vh] -bottom-[60vh] left-[10vh] bg-[#b45309] rounded-[50%] opacity-50"></div>
+        <div className="absolute w-[100vh] h-[100vh] -bottom-[40vh] left-[20vh] bg-[#92400e] rounded-[50%] opacity-60"></div>
+        <div className="absolute w-[80vh] h-[80vh] -bottom-[20vh] left-[30vh] bg-[#78350f] rounded-[50%] opacity-70"></div>
       </div>
 
       {/* Glass panel effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1e3a8a]/10 to-[#1e3a8a]/30"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#92400e]/10 to-[#78350f]/30"></div>
 
       {/* Login form */}
       <div className="max-w-screen-xl relative z-10 sm:rounded-lg flex justify-center flex-1   rounded-2xl ">
@@ -97,7 +97,7 @@ const LoginPage = () => {
             <div className="text-center mb-0">
               <h1 className="text-3xl xl:text-4xl font-bold text-yellow-400 tracking-tight flex items-center gap-2">
                 {/* <AiFillHome className="text-yellow-400 w-10 h-10" /> */}
-                Sun Valley Meeting Point
+                Sun Valley Event Calendar
               </h1>
               <p className="mt-2 text-gray-400">Please sign in to continue</p>
             </div>

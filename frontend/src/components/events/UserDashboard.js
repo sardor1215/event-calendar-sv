@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth";
 
 const serverIP = process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/";
@@ -53,11 +53,11 @@ const Countdown = ({ startTime, now }) => {
   );
 };
 
-export default function UserDashboard({ onMeetingClick }) {
+export default function UserDashboard({ onEventClick }) {
   const { token, userName, userId } = useAuth();
   const [now, setNow] = useState(new Date());
-  const [nextMeeting, setNextMeeting] = useState(null);
-  const [todayMeetings, setTodayMeetings] = useState([]);
+  const [nextEvent, setNextEvent] = useState(null);
+  const [todayEvents, setTodayEvents] = useState([]);
   const [pendingRsvps, setPendingRsvps] = useState([]);
   const [stats, setStats] = useState({ total: 0, upcoming: 0, thisWeek: 0 });
   const [loading, setLoading] = useState(true);
@@ -81,10 +81,10 @@ export default function UserDashboard({ onMeetingClick }) {
       const weekEnd = new Date(Date.now() + 7 * 86400000);
 
       const [upcomingRes, todayRes, totalRes, weekRes] = await Promise.all([
-        fetch(`${serverIP}api/meetings?from=${nowISO}&limit=10&page=1`, { headers }),
-        fetch(`${serverIP}api/meetings?from=${todayStart.toISOString()}&to=${todayEnd.toISOString()}&limit=20`, { headers }),
-        fetch(`${serverIP}api/meetings?limit=1`, { headers }),
-        fetch(`${serverIP}api/meetings?from=${nowISO}&to=${weekEnd.toISOString()}&limit=1`, { headers }),
+        fetch(`${serverIP}api/events?from=${nowISO}&limit=10&page=1`, { headers }),
+        fetch(`${serverIP}api/events?from=${todayStart.toISOString()}&to=${todayEnd.toISOString()}&limit=20`, { headers }),
+        fetch(`${serverIP}api/events?limit=1`, { headers }),
+        fetch(`${serverIP}api/events?from=${nowISO}&to=${weekEnd.toISOString()}&limit=1`, { headers }),
       ]);
 
       const [upcomingData, todayData, totalData, weekData] = await Promise.all([
@@ -94,18 +94,18 @@ export default function UserDashboard({ onMeetingClick }) {
         weekRes.ok ? weekRes.json() : {},
       ]);
 
-      const upcoming = upcomingData.meetings || [];
-      const today = todayData.meetings || [];
+      const upcoming = upcomingData.events || [];
+      const today = todayData.events || [];
 
-      setNextMeeting(upcoming[0] || null);
-      setTodayMeetings(today);
+      setNextEvent(upcoming[0] || null);
+      setTodayEvents(today);
       setStats({
         total: totalData.pagination?.total || 0,
         upcoming: upcomingData.pagination?.total || 0,
         thisWeek: weekData.pagination?.total || 0,
       });
 
-      // Find pending RSVPs — meetings where user is participant with rsvp_status = 'pending'
+      // Find pending RSVPs — events where user is participant with rsvp_status = 'pending'
       const pending = upcoming.filter(
         (m) =>
           String(m.organizer_id) !== String(userId) &&
@@ -128,8 +128,8 @@ export default function UserDashboard({ onMeetingClick }) {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Hero: Next Meeting */}
-      <div className={`relative overflow-hidden rounded-2xl p-6 text-white ${nextMeeting ? "bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800" : "bg-gradient-to-br from-gray-700 to-gray-800"}`}>
+      {/* Hero: Next Event */}
+      <div className={`relative overflow-hidden rounded-2xl p-6 text-white ${nextEvent ? "bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800" : "bg-gradient-to-br from-gray-700 to-gray-800"}`}>
         {/* decorative circles */}
         <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-yellow-400 opacity-10" />
         <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-yellow-400 opacity-5" />
@@ -140,43 +140,43 @@ export default function UserDashboard({ onMeetingClick }) {
             <div className="h-8 w-64 bg-white/20 rounded" />
             <div className="h-4 w-32 bg-white/20 rounded" />
           </div>
-        ) : nextMeeting ? (
+        ) : nextEvent ? (
           <div className="relative">
             <p className="text-yellow-300 text-xs font-semibold uppercase tracking-widest mb-1">
-              {isOngoing(nextMeeting) ? "🟢 Happening Now" : "Next Meeting"}
+              {isOngoing(nextEvent) ? "🟢 Happening Now" : "Next Event"}
             </p>
             <button
-              onClick={() => onMeetingClick && onMeetingClick(nextMeeting.id)}
+              onClick={() => onEventClick && onEventClick(nextEvent.id)}
               className="text-xl font-bold hover:text-yellow-300 transition-colors text-left block mb-3"
             >
-              {nextMeeting.title}
+              {nextEvent.title}
             </button>
             <div className="flex items-end gap-6 flex-wrap">
-              {!isOngoing(nextMeeting) && (
+              {!isOngoing(nextEvent) && (
                 <div>
                   <p className="text-white/50 text-xs mb-0.5">Starts in</p>
-                  <Countdown startTime={nextMeeting.start_time} now={now} />
+                  <Countdown startTime={nextEvent.start_time} now={now} />
                 </div>
               )}
               <div className="space-y-0.5">
                 <p className="text-white/50 text-xs">When</p>
-                <p className="text-sm font-medium">{formatTime(nextMeeting.start_time)}</p>
+                <p className="text-sm font-medium">{formatTime(nextEvent.start_time)}</p>
               </div>
-              {nextMeeting.location && (
+              {nextEvent.location && (
                 <div className="space-y-0.5">
                   <p className="text-white/50 text-xs">Where</p>
-                  <p className="text-sm font-medium">📍 {nextMeeting.location}</p>
+                  <p className="text-sm font-medium">📍 {nextEvent.location}</p>
                 </div>
               )}
               <div className="space-y-0.5">
                 <p className="text-white/50 text-xs">Duration</p>
-                <p className="text-sm font-medium">⏱ {formatDuration(nextMeeting.start_time, nextMeeting.end_time)}</p>
+                <p className="text-sm font-medium">⏱ {formatDuration(nextEvent.start_time, nextEvent.end_time)}</p>
               </div>
-              {nextMeeting.participants?.length > 0 && (
+              {nextEvent.participants?.length > 0 && (
                 <div className="space-y-0.5">
                   <p className="text-white/50 text-xs">Attendees</p>
                   <div className="flex -space-x-1">
-                    {nextMeeting.participants.slice(0, 5).map((p, i) => (
+                    {nextEvent.participants.slice(0, 5).map((p, i) => (
                       <div
                         key={p.id || i}
                         title={`${p.name} ${p.surname}`}
@@ -185,9 +185,9 @@ export default function UserDashboard({ onMeetingClick }) {
                         {`${(p.name || "").charAt(0)}${(p.surname || "").charAt(0)}`.toUpperCase()}
                       </div>
                     ))}
-                    {nextMeeting.participants.length > 5 && (
+                    {nextEvent.participants.length > 5 && (
                       <div className="h-6 w-6 rounded-full bg-gray-600 text-white border-2 border-gray-800 flex items-center justify-center text-[9px] font-bold">
-                        +{nextMeeting.participants.length - 5}
+                        +{nextEvent.participants.length - 5}
                       </div>
                     )}
                   </div>
@@ -197,9 +197,9 @@ export default function UserDashboard({ onMeetingClick }) {
           </div>
         ) : (
           <div className="relative">
-            <p className="text-yellow-300 text-xs font-semibold uppercase tracking-widest mb-2">Next Meeting</p>
+            <p className="text-yellow-300 text-xs font-semibold uppercase tracking-widest mb-2">Next Event</p>
             <p className="text-2xl font-bold mb-1">You're all clear!</p>
-            <p className="text-white/60 text-sm">No upcoming meetings scheduled.</p>
+            <p className="text-white/60 text-sm">No upcoming events scheduled.</p>
           </div>
         )}
       </div>
@@ -211,7 +211,7 @@ export default function UserDashboard({ onMeetingClick }) {
           <p className="text-xs text-gray-500 mt-0.5">Upcoming</p>
         </div>
         <div className="bg-white rounded-xl border border-green-200 p-4 text-center">
-          <p className="text-2xl font-black text-green-700">{loading ? "—" : todayMeetings.length}</p>
+          <p className="text-2xl font-black text-green-700">{loading ? "—" : todayEvents.length}</p>
           <p className="text-xs text-gray-500 mt-0.5">Today</p>
         </div>
         <div className="bg-white rounded-xl border border-blue-200 p-4 text-center">
@@ -221,7 +221,7 @@ export default function UserDashboard({ onMeetingClick }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Today's meetings */}
+        {/* Today's events */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
@@ -233,17 +233,17 @@ export default function UserDashboard({ onMeetingClick }) {
                 <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
               ))}
             </div>
-          ) : todayMeetings.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">No meetings today</p>
+          ) : todayEvents.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">No events today</p>
           ) : (
             <div className="space-y-2">
-              {todayMeetings.map((m) => {
+              {todayEvents.map((m) => {
                 const ongoing = isOngoing(m);
                 const cancelled = m.status === "cancelled";
                 return (
                   <button
                     key={m.id}
-                    onClick={() => onMeetingClick && onMeetingClick(m.id)}
+                    onClick={() => onEventClick && onEventClick(m.id)}
                     className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group ${ongoing ? "border border-green-200 bg-green-50" : "border border-gray-100"}`}
                   >
                     <div className={`w-1 h-8 rounded-full flex-shrink-0 ${cancelled ? "bg-red-300" : ongoing ? "bg-green-500" : "bg-yellow-400"}`} />
@@ -285,7 +285,7 @@ export default function UserDashboard({ onMeetingClick }) {
               {pendingRsvps.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => onMeetingClick && onMeetingClick(m.id)}
+                  onClick={() => onEventClick && onEventClick(m.id)}
                   className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg border border-orange-100 bg-orange-50 hover:bg-orange-100 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-orange-200 text-orange-700 flex items-center justify-center flex-shrink-0 text-xs font-bold">

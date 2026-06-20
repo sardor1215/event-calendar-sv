@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+﻿import React, { Suspense } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -17,11 +17,11 @@ const UserPage = React.lazy(() => import("./Routes/UserPage"));
 const AdminOverView = React.lazy(() => import("./components/admin/AdminOverView"));
 const AdminReports = React.lazy(() => import("./components/admin/AdminReports"));
 const AdminUsersPage = React.lazy(() => import("./components/admin/AdminUsersPage"));
-const AdminMeetings = React.lazy(() => import("./components/admin/AdminMeetings"));
+const AdminEvents = React.lazy(() => import("./components/admin/AdminEvents"));
 const AdminCategoriesPage = React.lazy(() => import("./components/admin/AdminCategoriesPage"));
 const SettingsPage = React.lazy(() => import("./Routes/SettingsPage"));
 const UserGuidePage = React.lazy(() => import("./Routes/UserGuidePage"));
-const UserMeetingsPage = React.lazy(() => import("./Routes/UserMeetingsPage"));
+const UserEventsPage = React.lazy(() => import("./Routes/UserEventsPage"));
 const CalendarPage = React.lazy(() => import("./Routes/CalendarPage"));
 
 const ProtectedRoute = ({ element, roles }) => {
@@ -87,9 +87,9 @@ const App = () => {
               }
             />
             <Route
-              path="/admin/meetings"
+              path="/admin/events"
               element={
-                <ProtectedRoute element={<AdminMeetings />} roles={["admin", "manager", "supervisor", "gm"]} />
+                <ProtectedRoute element={<AdminEvents />} roles={["admin", "manager", "supervisor", "gm"]} />
               }
             />
             <Route
@@ -110,9 +110,9 @@ const App = () => {
               element={<ProtectedRoute element={<UserPage />} roles={["user"]} />}
             />
             <Route
-              path="/user/meetings"
+              path="/user/events"
               element={
-                <ProtectedRoute element={<UserMeetingsPage />} roles={["user", "admin"]} />
+                <ProtectedRoute element={<UserEventsPage />} roles={["user", "admin"]} />
               }
             />
             <Route

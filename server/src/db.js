@@ -44,7 +44,7 @@ const connectDB = async () => {
 };
 
 const createTables = async () => {
-  const MEETINGS_ONLY = process.env.MEETINGS_ONLY === 'true';
+  const EVENTS_ONLY = process.env.EVENTS_ONLY === 'true';
 
   const tables = [
     `CREATE TABLE IF NOT EXISTS departments (
@@ -65,30 +65,30 @@ const createTables = async () => {
       registered_date TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (department) REFERENCES departments(id) ON DELETE SET NULL
     )`,
-    `CREATE TABLE IF NOT EXISTS meetings (
+    `CREATE TABLE IF NOT EXISTS events (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       description TEXT,
       organizer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
       location VARCHAR(255),
-      meeting_number VARCHAR(50),
-      meeting_chair VARCHAR(255),
+      event_number VARCHAR(50),
+      event_chair VARCHAR(255),
       start_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
       end_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
       duration_minutes INTEGER GENERATED ALWAYS AS (GREATEST(0, EXTRACT(EPOCH FROM (end_time - start_time))::int / 60)) STORED,
       created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )`,
-    `CREATE TABLE IF NOT EXISTS meeting_participants (
+    `CREATE TABLE IF NOT EXISTS event_participants (
       id SERIAL PRIMARY KEY,
-      meeting_id INTEGER NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       invited_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(meeting_id, user_id)
+      UNIQUE(event_id, user_id)
     )`,
-    `CREATE TABLE IF NOT EXISTS meeting_files (
+    `CREATE TABLE IF NOT EXISTS event_files (
       id SERIAL PRIMARY KEY,
-      meeting_id INTEGER NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
       file_path TEXT NOT NULL,
       file_name TEXT,
       file_size INTEGER,
@@ -101,13 +101,13 @@ const createTables = async () => {
       created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITHOUT TIME ZONE
     )`,
-    `CREATE TABLE IF NOT EXISTS meeting_templates (
+    `CREATE TABLE IF NOT EXISTS event_templates (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       title VARCHAR(255),
       description TEXT,
       location VARCHAR(255),
-      meeting_chair VARCHAR(255),
+      event_chair VARCHAR(255),
       duration_minutes INTEGER DEFAULT 60,
       participant_ids INTEGER[] DEFAULT '{}',
       created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -118,7 +118,7 @@ const createTables = async () => {
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       type VARCHAR(50) NOT NULL,
       message TEXT NOT NULL,
-      meeting_id INTEGER REFERENCES meetings(id) ON DELETE CASCADE,
+      event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
       is_read BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -137,12 +137,12 @@ const createTables = async () => {
   // Safe column migrations — add new columns to existing tables without recreating them
   const migrations = [
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITHOUT TIME ZONE`,
-    `ALTER TABLE meetings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'scheduled'`,
-    `ALTER TABLE meetings ADD COLUMN IF NOT EXISTS recurring_group_id VARCHAR(36)`,
-    `ALTER TABLE meeting_participants ADD COLUMN IF NOT EXISTS rsvp_status VARCHAR(20) DEFAULT 'pending'`,
-    `ALTER TABLE meetings ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE`,
-    `ALTER TABLE meetings ADD COLUMN IF NOT EXISTS notes TEXT`,
-    `ALTER TABLE meeting_participants ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'scheduled'`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS recurring_group_id VARCHAR(36)`,
+    `ALTER TABLE event_participants ADD COLUMN IF NOT EXISTS rsvp_status VARCHAR(20) DEFAULT 'pending'`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS notes TEXT`,
+    `ALTER TABLE event_participants ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT NULL`,
   ];
   for (const migration of migrations) {
     try {
@@ -152,7 +152,7 @@ const createTables = async () => {
     }
   }
 
-  if (MEETINGS_ONLY) {
+  if (EVENTS_ONLY) {
     try {
       const legacyTables = [
         'email_notifications_sent',
@@ -170,7 +170,7 @@ const createTables = async () => {
       for (const t of legacyTables) {
         await db.query(`DROP TABLE IF EXISTS ${t} CASCADE`);
       }
-      console.log('🧹 Dropped legacy ticket tables (meetings-only mode)');
+      console.log('🧹 Dropped legacy ticket tables (events-only mode)');
     } catch (error) {
       console.error('Error dropping legacy tables:', error);
     }

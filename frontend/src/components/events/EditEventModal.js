@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { fetchMeetingById, updateMeeting } from "../../api";
+﻿import React, { useEffect, useState } from "react";
+import { fetchEventById, updateEvent } from "../../api";
 import { useAuth } from "../../auth";
 import { useToast } from "../../hooks/useToast";
 import { useDropzone } from "react-dropzone";
 import FloatingInput from "../common/FloatingInput";
 
-const EditMeetingModal = ({ meetingId, onClose, onUpdated }) => {
+const EditEventModal = ({ eventId, onClose, onUpdated }) => {
   const { token } = useAuth();
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(true);
@@ -14,7 +14,7 @@ const EditMeetingModal = ({ meetingId, onClose, onUpdated }) => {
     title: "",
     description: "",
     location: "",
-    meeting_chair: "",
+    event_chair: "",
     start_time: "",
     end_time: "",
   });
@@ -54,12 +54,12 @@ const EditMeetingModal = ({ meetingId, onClose, onUpdated }) => {
     const load = async () => {
       try {
         setLoading(true);
-        const data = await fetchMeetingById(token, meetingId);
+        const data = await fetchEventById(token, eventId);
         setFormData({
           title: data.title || "",
           description: data.description || "",
           location: data.location || "",
-          meeting_chair: data.meeting_chair || "",
+          event_chair: data.event_chair || "",
           start_time: data.start_time ? toLocalInputValue(data.start_time) : "",
           end_time: data.end_time ? toLocalInputValue(data.end_time) : "",
         });
@@ -81,14 +81,14 @@ const EditMeetingModal = ({ meetingId, onClose, onUpdated }) => {
           }
         } catch {}
       } catch (e) {
-        showError("Failed to load meeting details");
+        showError("Failed to load event details");
         onClose?.();
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [meetingId, token]);
+  }, [eventId, token]);
 
   const toLocalInputValue = (iso) => {
     const d = new Date(iso);
@@ -109,24 +109,24 @@ const EditMeetingModal = ({ meetingId, onClose, onUpdated }) => {
 
   const initializeEmailPopup = () => {
     setEmailParticipants([...participants]);
-    setEmailSubject(`Meeting Update: ${formData.title}`);
+    setEmailSubject(`Event Update: ${formData.title}`);
     setEmailMessage(`Dear Participant,
 
-The following meeting has been updated:
+The following event has been updated:
 
-📅 Meeting Details:
+📅 Event Details:
 • Title: ${formData.title}
 • Start Time: ${formatDateTime(formData.start_time)}
 • End Time: ${formatDateTime(formData.end_time)}
 • Location: ${formData.location || "To be determined"}
-${formData.meeting_chair ? `• Meeting Chair: ${formData.meeting_chair}` : ""}
+${formData.event_chair ? `• Event Chair: ${formData.event_chair}` : ""}
 
 ${formData.description ? `📋 Notes:\n${formData.description}` : ""}
 
 Please take note of these changes.
 
 Best regards,
-Meeting Organizer`);
+Event Organizer`);
     setEmailErrors({});
     setShowEmailPopup(true);
   };
@@ -141,15 +141,15 @@ Meeting Organizer`);
 
     setSendingEmail(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_IP || "http://localhost:5000/"}api/meetings/send-notifications`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_IP || "http://localhost:5000/"}api/events/send-notifications`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          meetingId,
+          eventId,
           participants: emailParticipants,
           subject: emailSubject,
           message: emailMessage,
-          meetingTitle: formData.title,
+          eventTitle: formData.title,
           startTime: formData.start_time,
           endTime: formData.end_time,
           location: formData.location,
@@ -202,7 +202,7 @@ Meeting Organizer`);
       fd.append("title", formData.title);
       fd.append("description", formData.description);
       fd.append("location", formData.location);
-      fd.append("meeting_chair", formData.meeting_chair);
+      fd.append("event_chair", formData.event_chair);
       fd.append("start_time", formData.start_time);
       fd.append("end_time", formData.end_time);
       // participants
@@ -212,8 +212,8 @@ Meeting Organizer`);
       // new files
       filesToUpload.forEach(f => fd.append('files', f));
 
-      await updateMeeting(token, meetingId, fd);
-      showSuccess("Meeting updated successfully!");
+      await updateEvent(token, eventId, fd);
+      showSuccess("Event updated successfully!");
       if (participants.length > 0) {
         initializeEmailPopup();
       } else {
@@ -221,8 +221,8 @@ Meeting Organizer`);
         onClose?.();
       }
     } catch (err) {
-      console.error("Failed to update meeting", err);
-      showError("Failed to update meeting");
+      console.error("Failed to update event", err);
+      showError("Failed to update event");
     } finally {
       setSaving(false);
     }
@@ -233,7 +233,7 @@ Meeting Organizer`);
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white shadow-xl max-w-xl w-full p-6 text-center">
           <div className="animate-spin h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-gray-600">Loading meeting...</p>
+          <p className="text-gray-600">Loading event...</p>
         </div>
       </div>
     );
@@ -251,8 +251,8 @@ Meeting Organizer`);
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Edit Meeting</h2>
-              <p className="text-gray-500 text-sm">Update meeting details</p>
+              <h2 className="text-xl font-bold text-gray-900">Edit Event</h2>
+              <p className="text-gray-500 text-sm">Update event details</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl p-1 hover:bg-gray-100 rounded-lg transition-colors">×</button>
@@ -268,7 +268,7 @@ Meeting Organizer`);
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FloatingInput label="Location" id="location" name="location" value={formData.location} onChange={handleChange} />
-            <FloatingInput label="Meeting Chair" id="meeting_chair" name="meeting_chair" value={formData.meeting_chair} onChange={handleChange} />
+            <FloatingInput label="Event Chair" id="event_chair" name="event_chair" value={formData.event_chair} onChange={handleChange} />
           </div>
 
           <FloatingInput label="Description" id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
@@ -379,7 +379,7 @@ Meeting Organizer`);
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">Notify Participants About Update</h2>
-                    <p className="text-gray-500 text-sm">Send an email about the meeting changes</p>
+                    <p className="text-gray-500 text-sm">Send an email about the event changes</p>
                   </div>
                 </div>
                 <button
@@ -518,6 +518,6 @@ Meeting Organizer`);
   );
 };
 
-export default EditMeetingModal;
+export default EditEventModal;
 
 

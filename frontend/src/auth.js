@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+﻿import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.getItem("userEmail")
   );
 
-  // Removed push notification setup - not needed for meeting app
+  // Removed push notification setup - not needed for event app
 
   // Function to store authentication data in storage
   const saveAuthData = (

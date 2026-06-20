@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth";
-import { fetchMeetings, deleteMeeting, serverIP } from "../../api";
+import { fetchEvents, deleteEvent, serverIP } from "../../api";
 import EventCalendar from "./EventCalendar";
-import EditMeetingModal from "./EditMeetingModal";
-import MeetingDetailPanel from "./MeetingDetailPanel";
+import EditEventModal from "./EditEventModal";
+import EventDetailPanel from "./EventDetailPanel";
 
-const MeetingsList = ({ refreshTrigger }) => {
+const EventsList = ({ refreshTrigger }) => {
   const { token, userRole, userId } = useAuth();
-  const [meetings, setMeetings] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState(null);
@@ -21,12 +21,12 @@ const MeetingsList = ({ refreshTrigger }) => {
     search: ""
   });
   const [viewMode, setViewMode] = useState("list"); // 'list' | 'calendar'
-  const [editingMeetingId, setEditingMeetingId] = useState(null);
-  const [detailMeetingId, setDetailMeetingId] = useState(null);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [detailEventId, setDetailEventId] = useState(null);
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    loadMeetings();
+    loadEvents();
     loadLocations();
   }, [currentPage, refreshTrigger]);
 
@@ -53,7 +53,7 @@ const MeetingsList = ({ refreshTrigger }) => {
     }
   };
 
-  const loadMeetings = async () => {
+  const loadEvents = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -71,64 +71,64 @@ const MeetingsList = ({ refreshTrigger }) => {
         }
       });
 
-      const response = await fetchMeetings(token, queryParams);
+      const response = await fetchEvents(token, queryParams);
       
-      if (response.meetings) {
-        setMeetings(response.meetings);
+      if (response.events) {
+        setEvents(response.events);
         setPagination(response.pagination);
       } else {
-        setMeetings(response);
+        setEvents(response);
       }
     } catch (err) {
-      console.error("Error loading meetings:", err);
-      setError("Failed to load meetings");
+      console.error("Error loading events:", err);
+      setError("Failed to load events");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (meetingId) => {
-    if (!window.confirm("Are you sure you want to delete this meeting?")) {
+  const handleDelete = async (eventId) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) {
       return;
     }
 
     try {
-      await deleteMeeting(token, meetingId);
-      loadMeetings();
+      await deleteEvent(token, eventId);
+      loadEvents();
     } catch (err) {
-      console.error("Error deleting meeting:", err);
-      alert("Failed to delete meeting");
+      console.error("Error deleting event:", err);
+      alert("Failed to delete event");
     }
   };
 
-  const handleCancel = async (meetingId, title) => {
-    if (!window.confirm(`Cancel the meeting "${title}"? Participants will be notified.`)) return;
+  const handleCancel = async (eventId, title) => {
+    if (!window.confirm(`Cancel the event "${title}"? Participants will be notified.`)) return;
     try {
-      const res = await fetch(`${serverIP}api/meetings/${meetingId}/cancel`, {
+      const res = await fetch(`${serverIP}api/events/${eventId}/cancel`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        loadMeetings();
+        loadEvents();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to cancel meeting');
+        alert(data.error || 'Failed to cancel event');
       }
     } catch (err) {
-      console.error("Error cancelling meeting:", err);
-      alert("Failed to cancel meeting");
+      console.error("Error cancelling event:", err);
+      alert("Failed to cancel event");
     }
   };
 
-  const handleRsvp = async (meetingId, status) => {
+  const handleRsvp = async (eventId, status) => {
     try {
-      const res = await fetch(`${serverIP}api/meetings/${meetingId}/rsvp`, {
+      const res = await fetch(`${serverIP}api/events/${eventId}/rsvp`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status })
       });
       if (res.ok) {
-        loadMeetings();
+        loadEvents();
       } else {
         const data = await res.json();
         alert(data.error || 'Failed to update RSVP');
@@ -148,7 +148,7 @@ const MeetingsList = ({ refreshTrigger }) => {
 
   const applyFilters = () => {
     setCurrentPage(1);
-    loadMeetings();
+    loadEvents();
   };
 
   const clearFilters = () => {
@@ -191,15 +191,15 @@ const MeetingsList = ({ refreshTrigger }) => {
     return `${mins}m`;
   };
 
-  const isMeetingUpcoming = (startTime) => {
+  const isEventUpcoming = (startTime) => {
     return new Date(startTime) > new Date();
   };
 
-  const isMeetingPast = (endTime) => {
+  const isEventPast = (endTime) => {
     return new Date(endTime) < new Date();
   };
 
-  const isMeetingOngoing = (startTime, endTime) => {
+  const isEventOngoing = (startTime, endTime) => {
     const now = new Date();
     return new Date(startTime) <= now && now <= new Date(endTime);
   };
@@ -215,16 +215,16 @@ const MeetingsList = ({ refreshTrigger }) => {
     const days = Math.floor(h / 24);
     const remH = h % 24;
     if (days < 2) return { label: `${days}d ${remH > 0 ? remH + "h" : ""}`, urgent: false };
-    return null; // show date instead for far-future meetings
+    return null; // show date instead for far-future events
   };
 
-  const getMeetingStatus = (meeting) => {
-    if (meeting.status === 'cancelled') {
+  const getEventStatus = (event) => {
+    if (event.status === 'cancelled') {
       return { text: "Cancelled", color: "bg-red-100 text-red-800" };
     }
-    if (isMeetingOngoing(meeting.start_time, meeting.end_time)) {
+    if (isEventOngoing(event.start_time, event.end_time)) {
       return { text: "Ongoing", color: "bg-green-100 text-green-800" };
-    } else if (isMeetingUpcoming(meeting.start_time)) {
+    } else if (isEventUpcoming(event.start_time)) {
       return { text: "Upcoming", color: "bg-yellow-100 text-yellow-800" };
     } else {
       return { text: "Past", color: "bg-gray-100 text-gray-800" };
@@ -250,7 +250,7 @@ const MeetingsList = ({ refreshTrigger }) => {
             </div>
             <div className="mt-4">
               <button
-                onClick={loadMeetings}
+                onClick={loadEvents}
                 className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
               >
                 Try Again
@@ -266,7 +266,7 @@ const MeetingsList = ({ refreshTrigger }) => {
     <div className="space-y-6">
       {/* Header with View Toggle */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-800">Meetings</h2>
+        <h2 className="text-xl font-semibold text-gray-800">Events</h2>
         <div className="inline-flex bg-white border border-gray-200 rounded-md overflow-hidden">
           <button
             onClick={() => setViewMode("list")}
@@ -371,40 +371,40 @@ const MeetingsList = ({ refreshTrigger }) => {
           />
         </div>
       ) : (
-      /* Meetings List */
+      /* Events List */
       <div className="space-y-4">
-        {meetings.length === 0 ? (
+        {events.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No meetings found</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new meeting.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No events found</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by creating a new event.</p>
           </div>
         ) : (
-          meetings.map((meeting) => {
-            const status = getMeetingStatus(meeting);
-            const canEdit = userRole === "admin" || meeting.organizer_id === userId;
+          events.map((event) => {
+            const status = getEventStatus(event);
+            const canEdit = userRole === "admin" || event.organizer_id === userId;
             
             return (
-              <div key={meeting.id} className="bg-white rounded-lg shadow border border-gray-200">
+              <div key={event.id} className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="p-3 sm:p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2 flex-wrap gap-y-1">
                         <button
-                          onClick={() => setDetailMeetingId(meeting.id)}
+                          onClick={() => setDetailEventId(event.id)}
                           className="text-lg font-semibold text-gray-900 hover:text-yellow-700 transition-colors text-left"
                         >
-                          {meeting.title}
+                          {event.title}
                         </button>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
                           {status.text === "Ongoing" && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1" />}
                           {status.text}
                         </span>
                         {(() => {
-                          const cd = getCountdown(meeting.start_time);
-                          if (!cd || isMeetingOngoing(meeting.start_time, meeting.end_time) || isMeetingPast(meeting.end_time)) return null;
+                          const cd = getCountdown(event.start_time);
+                          if (!cd || isEventOngoing(event.start_time, event.end_time) || isEventPast(event.end_time)) return null;
                           return (
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cd.urgent ? "bg-orange-100 text-orange-700" : "bg-blue-50 text-blue-700"}`}>
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,8 +416,8 @@ const MeetingsList = ({ refreshTrigger }) => {
                         })()}
                       </div>
                       
-                      {meeting.description && (
-                        <p className="text-gray-600 mb-3">{meeting.description}</p>
+                      {event.description && (
+                        <p className="text-gray-600 mb-3">{event.description}</p>
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
@@ -427,33 +427,33 @@ const MeetingsList = ({ refreshTrigger }) => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span className="font-medium">Start:</span>
-                            <span className="ml-1">{formatDateTime(meeting.start_time)}</span>
+                            <span className="ml-1">{formatDateTime(event.start_time)}</span>
                           </div>
                           <div className="flex items-center">
                             <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span className="font-medium">End:</span>
-                            <span className="ml-1">{formatDateTime(meeting.end_time)}</span>
+                            <span className="ml-1">{formatDateTime(event.end_time)}</span>
                           </div>
                           <div className="flex items-center">
                             <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span className="font-medium">Duration:</span>
-                            <span className="ml-1">{formatDuration(meeting.start_time, meeting.end_time)}</span>
+                            <span className="ml-1">{formatDuration(event.start_time, event.end_time)}</span>
                           </div>
                         </div>
                         
                         <div className="space-y-2">
-                          {meeting.location && (
+                          {event.location && (
                             <div className="flex items-center">
                               <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
                               <span className="font-medium">Location:</span>
-                              <span className="ml-1">{meeting.location}</span>
+                              <span className="ml-1">{event.location}</span>
                             </div>
                           )}
                           
@@ -462,34 +462,34 @@ const MeetingsList = ({ refreshTrigger }) => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             <span className="font-medium">Organizer:</span>
-                            <span className="ml-1">{meeting.organizer_name} {meeting.organizer_surname}</span>
+                            <span className="ml-1">{event.organizer_name} {event.organizer_surname}</span>
                           </div>
                           
-                          {meeting.department_name && (
+                          {event.department_name && (
                             <div className="flex items-center">
                               <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                               </svg>
                               <span className="font-medium">Department:</span>
-                              <span className="ml-1">{meeting.department_name}</span>
+                              <span className="ml-1">{event.department_name}</span>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Attendance summary for past meetings */}
-                      {isMeetingPast(meeting.end_time) && meeting.status !== 'cancelled' && parseInt(meeting.participant_count) > 0 && (
+                      {/* Attendance summary for past events */}
+                      {isEventPast(event.end_time) && event.status !== 'cancelled' && parseInt(event.participant_count) > 0 && (
                         <div className="mt-2 mb-1">
-                          {parseInt(meeting.attended_count) > 0 ? (
+                          {parseInt(event.attended_count) > 0 ? (
                             <div className="flex items-center gap-2">
                               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[120px]">
                                 <div
                                   className="h-full bg-green-400 rounded-full"
-                                  style={{ width: `${Math.round((parseInt(meeting.attended_count) / parseInt(meeting.participant_count)) * 100)}%` }}
+                                  style={{ width: `${Math.round((parseInt(event.attended_count) / parseInt(event.participant_count)) * 100)}%` }}
                                 />
                               </div>
                               <span className="text-xs text-green-700 font-medium">
-                                {meeting.attended_count}/{meeting.participant_count} attended
+                                {event.attended_count}/{event.participant_count} attended
                               </span>
                             </div>
                           ) : (
@@ -499,7 +499,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                       )}
 
                       {/* Participants */}
-                      {meeting.participants && meeting.participants.length > 0 && (
+                      {event.participants && event.participants.length > 0 && (
                         <div className="mt-4">
                           <div className="flex items-center mb-2">
                             <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -508,7 +508,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                             <span className="text-sm font-medium text-gray-700">Participants:</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {meeting.participants.map((participant) => (
+                            {event.participants.map((participant) => (
                               <span
                                 key={participant.id}
                                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
@@ -521,7 +521,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                       )}
 
                       {/* Files */}
-                      {meeting.files && meeting.files.length > 0 && (
+                      {event.files && event.files.length > 0 && (
                         <div className="mt-4">
                           <div className="flex items-center mb-2">
                             <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -530,7 +530,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                             <span className="text-sm font-medium text-gray-700">Attachments:</span>
                           </div>
                           <div className="space-y-1">
-                            {meeting.files.map((file) => (
+                            {event.files.map((file) => (
                               <a
                                 key={file.id}
                                 href={`${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}${file.file_path}`}
@@ -552,36 +552,36 @@ const MeetingsList = ({ refreshTrigger }) => {
                     {/* Actions */}
                     <div className="flex flex-col gap-2 ml-2 flex-shrink-0">
                       {/* RSVP for participants (non-organizers) */}
-                      {meeting.status !== 'cancelled' && meeting.participants?.some(p => String(p.id) === String(userId)) && String(meeting.organizer_id) !== String(userId) && (
+                      {event.status !== 'cancelled' && event.participants?.some(p => String(p.id) === String(userId)) && String(event.organizer_id) !== String(userId) && (
                         <div className="flex gap-1">
                           <button
-                            onClick={() => handleRsvp(meeting.id, 'accepted')}
+                            onClick={() => handleRsvp(event.id, 'accepted')}
                             className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded hover:bg-green-200 transition-colors"
                             title="Accept"
                           >✓ Accept</button>
                           <button
-                            onClick={() => handleRsvp(meeting.id, 'declined')}
+                            onClick={() => handleRsvp(event.id, 'declined')}
                             className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded hover:bg-red-200 transition-colors"
                             title="Decline"
                           >✗ Decline</button>
                         </div>
                       )}
-                      {canEdit && meeting.status !== 'cancelled' && (
+                      {canEdit && event.status !== 'cancelled' && (
                         <div className="flex space-x-1">
                           <button
-                            onClick={() => setEditingMeetingId(meeting.id)}
+                            onClick={() => setEditingEventId(event.id)}
                             className="text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 p-2 rounded transition-colors"
-                            title="Edit meeting"
+                            title="Edit event"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          {isMeetingUpcoming(meeting.start_time) && (
+                          {isEventUpcoming(event.start_time) && (
                             <button
-                              onClick={() => handleCancel(meeting.id, meeting.title)}
+                              onClick={() => handleCancel(event.id, event.title)}
                               className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 p-2 rounded transition-colors"
-                              title="Cancel meeting"
+                              title="Cancel event"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -589,9 +589,9 @@ const MeetingsList = ({ refreshTrigger }) => {
                             </button>
                           )}
                           <button
-                            onClick={() => handleDelete(meeting.id)}
+                            onClick={() => handleDelete(event.id)}
                             className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded transition-colors"
-                            title="Delete meeting"
+                            title="Delete event"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -637,22 +637,22 @@ const MeetingsList = ({ refreshTrigger }) => {
         </div>
       )}
 
-      {editingMeetingId && (
-        <EditMeetingModal
-          meetingId={editingMeetingId}
-          onClose={() => setEditingMeetingId(null)}
+      {editingEventId && (
+        <EditEventModal
+          eventId={editingEventId}
+          onClose={() => setEditingEventId(null)}
           onUpdated={() => {
-            setEditingMeetingId(null);
-            loadMeetings();
+            setEditingEventId(null);
+            loadEvents();
           }}
         />
       )}
 
-      {detailMeetingId && (
-        <MeetingDetailPanel
-          meetingId={detailMeetingId}
-          onClose={() => setDetailMeetingId(null)}
-          onEdit={(id) => { setDetailMeetingId(null); setEditingMeetingId(id); }}
+      {detailEventId && (
+        <EventDetailPanel
+          eventId={detailEventId}
+          onClose={() => setDetailEventId(null)}
+          onEdit={(id) => { setDetailEventId(null); setEditingEventId(id); }}
           onCancel={handleCancel}
           onRsvp={handleRsvp}
         />
@@ -661,4 +661,4 @@ const MeetingsList = ({ refreshTrigger }) => {
   );
 };
 
-export default MeetingsList;
+export default EventsList;

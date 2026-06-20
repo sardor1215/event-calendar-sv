@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
-import EventCalendar from '../components/meetings/EventCalendar';
-import EditMeetingModal from '../components/meetings/EditMeetingModal';
-import MeetingForm from '../components/meetings/MeetingForm';
+import EventCalendar from '../components/events/EventCalendar';
+import EditEventModal from '../components/events/EditEventModal';
+import EventForm from '../components/events/EventForm';
 import Navbar from '../components/Navbar';
-import { fetchMeetings, deleteMeeting } from '../api';
+import { fetchEvents, deleteEvent } from '../api';
 
 const CalendarPage = () => {
   const { token, userRole, userId } = useAuth();
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [editingMeetingId, setEditingMeetingId] = useState(null);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -43,7 +43,7 @@ const CalendarPage = () => {
     setShowCreateModal(false);
     setSelectedEvent(null);
     setSelectedDate(null);
-    setEditingMeetingId(null);
+    setEditingEventId(null);
   };
 
   const handleEventSaved = () => {
@@ -52,17 +52,17 @@ const CalendarPage = () => {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm('Are you sure you want to delete this meeting?')) {
+    if (!window.confirm('Are you sure you want to delete this event?')) {
       return;
     }
 
     try {
-      await deleteMeeting(token, eventId);
+      await deleteEvent(token, eventId);
       setRefreshTrigger(prev => prev + 1);
       handleCloseModals();
     } catch (err) {
-      console.error('Error deleting meeting:', err);
-      alert('Failed to delete meeting');
+      console.error('Error deleting event:', err);
+      alert('Failed to delete event');
     }
   };
 
@@ -118,7 +118,7 @@ const CalendarPage = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Event Calendar</h1>
               <p className="mt-2 text-gray-600">
-                View and manage your meetings and events
+                View and manage your events and events
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex gap-3">
@@ -147,7 +147,7 @@ const CalendarPage = () => {
             name="search"
             value={filters.search}
             onChange={handleFilterChange}
-            placeholder="Search meetings..."
+            placeholder="Search events..."
             className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
           />
           <select
@@ -167,7 +167,7 @@ const CalendarPage = () => {
             onChange={handleFilterChange}
             className="px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
           >
-            <option value="all">All Meetings</option>
+            <option value="all">All Events</option>
             <option value="upcoming">Upcoming</option>
             <option value="ongoing">Ongoing</option>
             <option value="past">Past</option>
@@ -179,7 +179,7 @@ const CalendarPage = () => {
             <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span className="hidden sm:inline">Create Meeting</span>
+            <span className="hidden sm:inline">Create Event</span>
             <span className="sm:hidden">New</span>
           </button>
         </div>
@@ -205,8 +205,8 @@ const CalendarPage = () => {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">Meeting Details</h3>
-                      <p className="text-gray-500 text-sm">Full meeting information</p>
+                      <h3 className="text-xl font-bold text-gray-900">Event Details</h3>
+                      <p className="text-gray-500 text-sm">Full event information</p>
                     </div>
                   </div>
                   <button
@@ -223,7 +223,7 @@ const CalendarPage = () => {
               <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
 
                 <div className="space-y-6">
-                  {/* Meeting Title */}
+                  {/* Event Title */}
                   <div className="text-center">
                     <h4 className="text-2xl font-bold text-gray-900 mb-2">
                       {selectedEvent.title}
@@ -255,10 +255,10 @@ const CalendarPage = () => {
                     </div>
                   )}
 
-                  {/* Meeting Details Grid */}
+                  {/* Event Details Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Meeting Number */}
-                    {selectedEvent.extendedProps.meeting_number && (
+                    {/* Event Number */}
+                    {selectedEvent.extendedProps.event_number && (
                       <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex items-center mb-3">
                           <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
@@ -267,15 +267,15 @@ const CalendarPage = () => {
                             </svg>
                           </div>
                           <div>
-                            <h6 className="font-semibold text-gray-800">Meeting Number</h6>
-                            <p className="text-sm text-gray-600">{selectedEvent.extendedProps.meeting_number}</p>
+                            <h6 className="font-semibold text-gray-800">Event Number</h6>
+                            <p className="text-sm text-gray-600">{selectedEvent.extendedProps.event_number}</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Meeting Chair */}
-                    {selectedEvent.extendedProps.meeting_chair && (
+                    {/* Event Chair */}
+                    {selectedEvent.extendedProps.event_chair && (
                       <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex items-center mb-3">
                           <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
@@ -284,8 +284,8 @@ const CalendarPage = () => {
                             </svg>
                           </div>
                           <div>
-                            <h6 className="font-semibold text-gray-800">Meeting Chair</h6>
-                            <p className="text-sm text-gray-600">{selectedEvent.extendedProps.meeting_chair}</p>
+                            <h6 className="font-semibold text-gray-800">Event Chair</h6>
+                            <p className="text-sm text-gray-600">{selectedEvent.extendedProps.event_chair}</p>
                           </div>
                         </div>
                       </div>
@@ -409,7 +409,7 @@ const CalendarPage = () => {
                   {selectedEvent.extendedProps.canEdit && (
                     <>
                       <button
-                        onClick={() => setEditingMeetingId(selectedEvent.id)}
+                        onClick={() => setEditingEventId(selectedEvent.id)}
                         className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400"
                       >
                         Edit
@@ -453,7 +453,7 @@ const CalendarPage = () => {
                   </button>
                 </div>
 
-                <MeetingForm
+                <EventForm
                   onClose={handleCloseModals}
                   onCreated={handleEventSaved}
                   initialData={selectedEvent ? {
@@ -474,12 +474,12 @@ const CalendarPage = () => {
           </div>
         )}
 
-        {editingMeetingId && (
-          <EditMeetingModal
-            meetingId={editingMeetingId}
-            onClose={() => setEditingMeetingId(null)}
+        {editingEventId && (
+          <EditEventModal
+            eventId={editingEventId}
+            onClose={() => setEditingEventId(null)}
             onUpdated={() => {
-              setEditingMeetingId(null);
+              setEditingEventId(null);
               setRefreshTrigger(prev => prev + 1);
               setShowEventModal(false);
             }}

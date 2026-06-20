@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth";
 
 const serverIP = process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/";
@@ -45,9 +45,9 @@ const formatDuration = (start, end) => {
   return h > 0 ? `${h}h ${m > 0 ? m + "m" : ""}` : `${m}m`;
 };
 
-export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCancel, onRsvp }) {
+export default function EventDetailPanel({ eventId, onClose, onEdit, onCancel, onRsvp }) {
   const { token, userId, userRole } = useAuth();
-  const [meeting, setMeeting] = useState(null);
+  const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
@@ -56,16 +56,16 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceSaved, setAttendanceSaved] = useState(false);
 
-  const fetchMeeting = useCallback(async () => {
-    if (!meetingId) return;
+  const fetchEvent = useCallback(async () => {
+    if (!eventId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${serverIP}api/meetings/${meetingId}`, {
+      const res = await fetch(`${serverIP}api/events/${eventId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setMeeting(data);
+        setEvent(data);
         setNotes(data.notes || "");
         // Seed attendance state from existing data
         if (data.participants) {
@@ -76,15 +76,15 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
       }
     } catch (_) {}
     setLoading(false);
-  }, [meetingId, token]);
+  }, [eventId, token]);
 
-  useEffect(() => { fetchMeeting(); }, [fetchMeeting]);
+  useEffect(() => { fetchEvent(); }, [fetchEvent]);
 
   const saveNotes = async () => {
-    if (!meeting) return;
+    if (!event) return;
     setNotesSaving(true);
     try {
-      await fetch(`${serverIP}api/meetings/${meetingId}/notes`, {
+      await fetch(`${serverIP}api/events/${eventId}/notes`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ notes }),
@@ -96,11 +96,11 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
   };
 
   const saveAttendance = async () => {
-    if (!meeting) return;
+    if (!event) return;
     setAttendanceSaving(true);
     try {
       const payload = Object.entries(attendance).map(([user_id, attended]) => ({ user_id: parseInt(user_id), attended }));
-      await fetch(`${serverIP}api/meetings/${meetingId}/attendance`, {
+      await fetch(`${serverIP}api/events/${eventId}/attendance`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ attendance: payload }),
@@ -111,17 +111,17 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
     setAttendanceSaving(false);
   };
 
-  const canEdit = meeting && (userRole === "admin" || String(meeting.organizer_id) === String(userId));
-  const isCancelled = meeting?.status === "cancelled";
-  const isOngoing = meeting && new Date(meeting.start_time) <= new Date() && new Date() <= new Date(meeting.end_time);
-  const isUpcoming = meeting && new Date(meeting.start_time) > new Date();
-  const isPast = meeting && new Date(meeting.end_time) < new Date();
-  const isParticipant = meeting?.participants?.some((p) => String(p.id) === String(userId));
-  const myRsvp = meeting?.participants?.find((p) => String(p.id) === String(userId))?.rsvp_status;
+  const canEdit = event && (userRole === "admin" || String(event.organizer_id) === String(userId));
+  const isCancelled = event?.status === "cancelled";
+  const isOngoing = event && new Date(event.start_time) <= new Date() && new Date() <= new Date(event.end_time);
+  const isUpcoming = event && new Date(event.start_time) > new Date();
+  const isPast = event && new Date(event.end_time) < new Date();
+  const isParticipant = event?.participants?.some((p) => String(p.id) === String(userId));
+  const myRsvp = event?.participants?.find((p) => String(p.id) === String(userId))?.rsvp_status;
 
-  const acceptedCount = meeting?.participants?.filter((p) => p.rsvp_status === "accepted").length || 0;
-  const declinedCount = meeting?.participants?.filter((p) => p.rsvp_status === "declined").length || 0;
-  const pendingCount = meeting?.participants?.filter((p) => p.rsvp_status === "pending" || !p.rsvp_status).length || 0;
+  const acceptedCount = event?.participants?.filter((p) => p.rsvp_status === "accepted").length || 0;
+  const declinedCount = event?.participants?.filter((p) => p.rsvp_status === "declined").length || 0;
+  const pendingCount = event?.participants?.filter((p) => p.rsvp_status === "pending" || !p.rsvp_status).length || 0;
 
   return (
     <>
@@ -154,7 +154,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Upcoming</span>
                   )}
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 leading-tight">{meeting?.title}</h2>
+                <h2 className="text-lg font-bold text-gray-900 leading-tight">{event?.title}</h2>
               </>
             )}
           </div>
@@ -173,7 +173,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                 <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: `${70 + i * 5}%` }} />
               ))}
             </div>
-          ) : meeting ? (
+          ) : event ? (
             <>
               {/* Date / Time / Duration */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-2">
@@ -181,19 +181,19 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                   <svg className="w-4 h-4 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-medium">{formatDateTime(meeting.start_time)}</span>
+                  <span className="font-medium">{formatDateTime(event.start_time)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
-                  <span>→ {formatDateTime(meeting.end_time)}</span>
+                  <span>→ {formatDateTime(event.end_time)}</span>
                   <span className="ml-auto px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded-full text-xs font-semibold">
-                    {formatDuration(meeting.start_time, meeting.end_time)}
+                    {formatDuration(event.start_time, event.end_time)}
                   </span>
                 </div>
               </div>
 
               {/* Meta row */}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {meeting.location && (
+                {event.location && (
                   <div className="flex items-start gap-2">
                     <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -201,18 +201,18 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                     </svg>
                     <div>
                       <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Location</p>
-                      <p className="text-gray-800 font-medium">{meeting.location}</p>
+                      <p className="text-gray-800 font-medium">{event.location}</p>
                     </div>
                   </div>
                 )}
-                {meeting.meeting_chair && (
+                {event.event_chair && (
                   <div className="flex items-start gap-2">
                     <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <div>
                       <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Chair</p>
-                      <p className="text-gray-800 font-medium">{meeting.meeting_chair}</p>
+                      <p className="text-gray-800 font-medium">{event.event_chair}</p>
                     </div>
                   </div>
                 )}
@@ -222,36 +222,36 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                   </svg>
                   <div>
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Organizer</p>
-                    <p className="text-gray-800 font-medium">{meeting.organizer_name} {meeting.organizer_surname}</p>
+                    <p className="text-gray-800 font-medium">{event.organizer_name} {event.organizer_surname}</p>
                   </div>
                 </div>
-                {meeting.department_name && (
+                {event.department_name && (
                   <div className="flex items-start gap-2">
                     <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     <div>
                       <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Department</p>
-                      <p className="text-gray-800 font-medium">{meeting.department_name}</p>
+                      <p className="text-gray-800 font-medium">{event.department_name}</p>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Description */}
-              {meeting.description && (
+              {event.description && (
                 <div>
                   <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1.5">Description</p>
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{meeting.description}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{event.description}</p>
                 </div>
               )}
 
               {/* Participants */}
-              {meeting.participants && meeting.participants.length > 0 && (
+              {event.participants && event.participants.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
-                      Attendees ({meeting.participants.length})
+                      Attendees ({event.participants.length})
                     </p>
                     <div className="flex gap-2 text-xs">
                       <span className="text-green-600 font-medium">{acceptedCount} ✓</span>
@@ -261,13 +261,13 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                   </div>
                   {/* Avatar stack */}
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {meeting.participants.map((p) => (
+                    {event.participants.map((p) => (
                       <Avatar key={p.id} name={p.name} surname={p.surname} rsvp={p.rsvp_status} />
                     ))}
                   </div>
                   {/* Detailed list */}
                   <div className="space-y-1.5">
-                    {meeting.participants.map((p) => (
+                    {event.participants.map((p) => (
                       <div key={p.id} className="flex items-center gap-3">
                         <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
                           {`${(p.name || "").charAt(0)}${(p.surname || "").charAt(0)}`.toUpperCase()}
@@ -283,11 +283,11 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
               )}
 
               {/* Files */}
-              {meeting.files && meeting.files.length > 0 && (
+              {event.files && event.files.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">Attachments</p>
                   <div className="space-y-1.5">
-                    {meeting.files.map((f) => (
+                    {event.files.map((f) => (
                       <a
                         key={f.id}
                         href={`${serverIP}${f.file_path}`}
@@ -305,8 +305,8 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                 </div>
               )}
 
-              {/* Attendance — only shown after the meeting has ended */}
-              {isPast && meeting.participants && meeting.participants.length > 0 && (
+              {/* Attendance — only shown after the event has ended */}
+              {isPast && event.participants && event.participants.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Attendance</p>
@@ -323,11 +323,11 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
 
                   {/* Stats row */}
                   {(() => {
-                    const total = meeting.participants.length;
+                    const total = event.participants.length;
                     const markedAttended = Object.values(attendance).filter((v) => v === true).length;
                     const markedAbsent = Object.values(attendance).filter((v) => v === false).length;
                     const unmarked = total - markedAttended - markedAbsent;
-                    const rsvpAccepted = meeting.participants.filter((p) => p.rsvp_status === "accepted").length;
+                    const rsvpAccepted = event.participants.filter((p) => p.rsvp_status === "accepted").length;
                     const attendanceRate = total > 0 ? Math.round((markedAttended / total) * 100) : 0;
                     return (
                       <div className="bg-gray-50 rounded-xl p-3 mb-3 space-y-2">
@@ -363,7 +363,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
 
                   {/* Per-person checklist */}
                   <div className="space-y-1.5">
-                    {meeting.participants.map((p) => {
+                    {event.participants.map((p) => {
                       const attended = attendance[p.id];
                       return (
                         <div key={p.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors ${attended === true ? "bg-green-50 border-green-200" : attended === false ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}>
@@ -418,7 +418,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
               {/* Notes */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Meeting Notes</p>
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Event Notes</p>
                   {canEdit && (
                     <button
                       onClick={saveNotes}
@@ -434,7 +434,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     onBlur={saveNotes}
-                    placeholder="Add meeting notes, decisions, or action items…"
+                    placeholder="Add event notes, decisions, or action items…"
                     rows={4}
                     className="w-full text-sm border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none text-gray-700 placeholder-gray-400"
                   />
@@ -446,24 +446,24 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
               </div>
             </>
           ) : (
-            <p className="text-sm text-gray-500 text-center py-8">Meeting not found</p>
+            <p className="text-sm text-gray-500 text-center py-8">Event not found</p>
           )}
         </div>
 
         {/* Footer actions */}
-        {meeting && (
+        {event && (
           <div className="border-t border-gray-100 p-4 flex gap-2 flex-shrink-0 bg-white">
             {/* RSVP for participants */}
             {isParticipant && !canEdit && !isCancelled && (
               <>
                 <button
-                  onClick={() => { onRsvp && onRsvp(meeting.id, "accepted"); fetchMeeting(); }}
+                  onClick={() => { onRsvp && onRsvp(event.id, "accepted"); fetchEvent(); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${myRsvp === "accepted" ? "bg-green-500 text-white" : "bg-green-100 text-green-800 hover:bg-green-200"}`}
                 >
                   ✓ Accept
                 </button>
                 <button
-                  onClick={() => { onRsvp && onRsvp(meeting.id, "declined"); fetchMeeting(); }}
+                  onClick={() => { onRsvp && onRsvp(event.id, "declined"); fetchEvent(); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${myRsvp === "declined" ? "bg-red-500 text-white" : "bg-red-100 text-red-800 hover:bg-red-200"}`}
                 >
                   ✗ Decline
@@ -475,7 +475,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
               <>
                 {!isCancelled && (
                   <button
-                    onClick={() => { onEdit && onEdit(meeting.id); onClose(); }}
+                    onClick={() => { onEdit && onEdit(event.id); onClose(); }}
                     className="flex-1 py-2 bg-yellow-400 text-gray-900 font-semibold rounded-lg text-sm hover:bg-yellow-300 transition-colors"
                   >
                     Edit
@@ -483,7 +483,7 @@ export default function MeetingDetailPanel({ meetingId, onClose, onEdit, onCance
                 )}
                 {!isCancelled && isUpcoming && (
                   <button
-                    onClick={() => { onCancel && onCancel(meeting.id, meeting.title); onClose(); }}
+                    onClick={() => { onCancel && onCancel(event.id, event.title); onClose(); }}
                     className="flex-1 py-2 bg-orange-100 text-orange-800 font-semibold rounded-lg text-sm hover:bg-orange-200 transition-colors"
                   >
                     Cancel

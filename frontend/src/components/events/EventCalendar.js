@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useAuth } from '../../auth';
-import { fetchMeetings, deleteMeeting } from '../../api';
+import { fetchEvents, deleteEvent } from '../../api';
 
 const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {} }) => {
   const { token, userRole, userId } = useAuth();
-  const [meetings, setMeetings] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('dayGridMonth');
@@ -24,17 +24,17 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
   });
   const calendarRef = useRef(null);
 
-  const getEventColor = (meeting) => {
+  const getEventColor = (event) => {
     try {
       const now = new Date();
-      const start = new Date(meeting.start_time);
-      const end = new Date(meeting.end_time);
+      const start = new Date(event.start_time);
+      const end = new Date(event.end_time);
 
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
         return '#9ca3af'; // Light gray for invalid dates
       }
 
-      // Use different colors based on meeting type or department
+      // Use different colors based on event type or department
       const colors = [
         '#ec4899', // Pink
         '#10b981', // Green  
@@ -46,8 +46,8 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
         '#84cc16'  // Lime
       ];
 
-      // Use meeting ID or title hash to get consistent colors
-      const hash = meeting.id ? meeting.id : meeting.title ? meeting.title.length : 0;
+      // Use event ID or title hash to get consistent colors
+      const hash = event.id ? event.id : event.title ? event.title.length : 0;
       const colorIndex = hash % colors.length;
       
       if (start <= now && now <= end) {
@@ -63,11 +63,11 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
     }
   };
 
-  const getEventBorderColor = (meeting) => {
+  const getEventBorderColor = (event) => {
     try {
       const now = new Date();
-      const start = new Date(meeting.start_time);
-      const end = new Date(meeting.end_time);
+      const start = new Date(event.start_time);
+      const end = new Date(event.end_time);
 
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
         return '#6b7280'; // Darker gray for invalid dates
@@ -84,7 +84,7 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
         '#65a30d'  // Dark lime
       ];
 
-      const hash = meeting.id ? meeting.id : meeting.title ? meeting.title.length : 0;
+      const hash = event.id ? event.id : event.title ? event.title.length : 0;
       const colorIndex = hash % colors.length;
       
       if (start <= now && now <= end) {
@@ -100,7 +100,7 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
     }
   };
 
-  const loadMeetings = async () => {
+  const loadEvents = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -114,16 +114,16 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
         }
       });
 
-      const response = await fetchMeetings(token, queryParams);
+      const response = await fetchEvents(token, queryParams);
       
-      if (response.meetings) {
-        setMeetings(response.meetings);
+      if (response.events) {
+        setEvents(response.events);
       } else {
-        setMeetings(response);
+        setEvents(response);
       }
     } catch (err) {
-      console.error("Error loading meetings:", err);
-      setError("Failed to load meetings");
+      console.error("Error loading events:", err);
+      setError("Failed to load events");
     } finally {
       setLoading(false);
     }
@@ -150,12 +150,12 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
     }
   }, [isMobile]);
 
-  const formatMeetingsForCalendar = useCallback((meetings) => {
-    let filteredMeetings = meetings;
+  const formatEventsForCalendar = useCallback((events) => {
+    let filteredEvents = events;
 
-    // Ensure regular users only see related meetings (organizer or participant)
+    // Ensure regular users only see related events (organizer or participant)
     if (userRole !== 'admin') {
-      filteredMeetings = filteredMeetings.filter((m) => {
+      filteredEvents = filteredEvents.filter((m) => {
         try {
           const isOrganizer = m.organizer_id && Number(m.organizer_id) === Number(userId);
           const isParticipant = Array.isArray(m.participants) && m.participants.some((p) => Number(p.id) === Number(userId));
@@ -169,18 +169,18 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
     // Apply client-side search filter
     if (filters.search && filters.search.trim()) {
       const searchTerm = filters.search.toLowerCase();
-      filteredMeetings = meetings.filter(meeting => {
+      filteredEvents = events.filter(event => {
         try {
           return (
-            (meeting.title && meeting.title.toLowerCase().includes(searchTerm)) ||
-            (meeting.description && meeting.description.toLowerCase().includes(searchTerm)) ||
-            (meeting.location && meeting.location.toLowerCase().includes(searchTerm)) ||
-            (meeting.organizer_name && meeting.organizer_surname && 
-             `${meeting.organizer_name} ${meeting.organizer_surname}`.toLowerCase().includes(searchTerm)) ||
-            (meeting.department_name && meeting.department_name.toLowerCase().includes(searchTerm))
+            (event.title && event.title.toLowerCase().includes(searchTerm)) ||
+            (event.description && event.description.toLowerCase().includes(searchTerm)) ||
+            (event.location && event.location.toLowerCase().includes(searchTerm)) ||
+            (event.organizer_name && event.organizer_surname && 
+             `${event.organizer_name} ${event.organizer_surname}`.toLowerCase().includes(searchTerm)) ||
+            (event.department_name && event.department_name.toLowerCase().includes(searchTerm))
           );
         } catch (error) {
-          console.warn('Error filtering meeting by search:', error);
+          console.warn('Error filtering event by search:', error);
           return false;
         }
       });
@@ -189,11 +189,11 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
     // Apply client-side location filter
     if (filters.location && filters.location.trim()) {
       const locationTerm = filters.location.toLowerCase();
-      filteredMeetings = filteredMeetings.filter(meeting => {
+      filteredEvents = filteredEvents.filter(event => {
         try {
-          return meeting.location && meeting.location.toLowerCase().includes(locationTerm);
+          return event.location && event.location.toLowerCase().includes(locationTerm);
         } catch (error) {
-          console.warn('Error filtering meeting by location:', error);
+          console.warn('Error filtering event by location:', error);
           return false;
         }
       });
@@ -202,12 +202,12 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
     // Apply client-side status filter
     if (filters.status && filters.status !== 'all') {
       const now = new Date();
-      filteredMeetings = filteredMeetings.filter(meeting => {
+      filteredEvents = filteredEvents.filter(event => {
         try {
-          const start = new Date(meeting.start_time);
-          const end = new Date(meeting.end_time);
+          const start = new Date(event.start_time);
+          const end = new Date(event.end_time);
           
-          // Skip meetings with invalid dates
+          // Skip events with invalid dates
           if (isNaN(start.getTime()) || isNaN(end.getTime())) {
             return false;
           }
@@ -223,43 +223,43 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
               return true;
           }
         } catch (error) {
-          console.warn('Error filtering meeting by status:', error);
+          console.warn('Error filtering event by status:', error);
           return false;
         }
       });
     }
 
-    return filteredMeetings.map(meeting => ({
-      id: meeting.id || Math.random().toString(36).substr(2, 9),
-      title: meeting.title || 'Untitled Meeting',
-      start: meeting.start_time,
-      end: meeting.end_time,
+    return filteredEvents.map(event => ({
+      id: event.id || Math.random().toString(36).substr(2, 9),
+      title: event.title || 'Untitled Event',
+      start: event.start_time,
+      end: event.end_time,
       allDay: false,
-      backgroundColor: getEventColor(meeting),
-      borderColor: getEventColor(meeting),
+      backgroundColor: getEventColor(event),
+      borderColor: getEventColor(event),
       textColor: '#fff',
       extendedProps: {
-        description: meeting.description || '',
-        location: meeting.location || '',
-        organizer: `${meeting.organizer_name || ''} ${meeting.organizer_surname || ''}`.trim() || 'Unknown',
-        meeting_number: meeting.meeting_number || '',
-        meeting_chair: meeting.meeting_chair || '',
-        department: meeting.department_name || '',
-        participants: meeting.participants || [],
-        files: meeting.files || [],
-        canEdit: userRole === "admin" || (meeting.organizer_id && meeting.organizer_id === userId)
+        description: event.description || '',
+        location: event.location || '',
+        organizer: `${event.organizer_name || ''} ${event.organizer_surname || ''}`.trim() || 'Unknown',
+        event_number: event.event_number || '',
+        event_chair: event.event_chair || '',
+        department: event.department_name || '',
+        participants: event.participants || [],
+        files: event.files || [],
+        canEdit: userRole === "admin" || (event.organizer_id && event.organizer_id === userId)
       }
     }));
   }, [filters, userRole, userId]);
 
   useEffect(() => {
-    loadMeetings();
+    loadEvents();
   }, [refreshTrigger, filters]);
 
   // Memoize formatted events for performance
   const formattedEvents = useMemo(() => {
-    return formatMeetingsForCalendar(meetings);
-  }, [meetings, formatMeetingsForCalendar]);
+    return formatEventsForCalendar(events);
+  }, [events, formatEventsForCalendar]);
 
   const handleEventClick = (clickInfo) => {
     if (onEventClick) {
@@ -351,7 +351,7 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
             </div>
             <div className="mt-4">
               <button
-                onClick={loadMeetings}
+                onClick={loadEvents}
                 className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
               >
                 Try Again
@@ -377,11 +377,11 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
             </div>
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <input type="checkbox" id="meetings" className="w-4 h-4 text-yellow-500 rounded focus:ring-yellow-400" defaultChecked />
-                <label htmlFor="meetings" className="text-sm font-semibold text-gray-800">Meetings</label>
+                <input type="checkbox" id="events" className="w-4 h-4 text-yellow-500 rounded focus:ring-yellow-400" defaultChecked />
+                <label htmlFor="events" className="text-sm font-semibold text-gray-800">Events</label>
               </div>
               <div className="h-4 w-px bg-gray-300"></div>
-              <span className="text-xs text-gray-500 font-medium">{meetings.length} events</span>
+              <span className="text-xs text-gray-500 font-medium">{events.length} events</span>
             </div>
           </div>
           

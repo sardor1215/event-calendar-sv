@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useAuth } from "../../auth";
 import { serverIP } from "../../api";
 
 const AdminReports = () => {
   const { token } = useAuth();
-  const [meetings, setMeetings] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -12,11 +12,11 @@ const AdminReports = () => {
   const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
-    fetchMeetings();
+    fetchEvents();
     fetchDepartments();
   }, []);
 
-  const fetchMeetings = async () => {
+  const fetchEvents = async () => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
@@ -24,7 +24,7 @@ const AdminReports = () => {
       if (endDate) queryParams.append('to', endDate);
       if (departmentFilter) queryParams.append('department_id', departmentFilter);
 
-      const response = await fetch(`${serverIP}api/meetings?${queryParams}`, {
+      const response = await fetch(`${serverIP}api/events?${queryParams}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -32,10 +32,10 @@ const AdminReports = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setMeetings(data.meetings || data);
+        setEvents(data.events || data);
       }
     } catch (error) {
-      console.error("Error fetching meetings:", error);
+      console.error("Error fetching events:", error);
     } finally {
       setLoading(false);
     }
@@ -59,20 +59,20 @@ const AdminReports = () => {
   };
 
   const handleFilter = () => {
-    fetchMeetings();
+    fetchEvents();
   };
 
   const exportToCSV = () => {
     const csvContent = [
       ['Title', 'Organizer', 'Start Time', 'End Time', 'Location', 'Department', 'Participants'],
-      ...meetings.map(meeting => [
-        meeting.title,
-        `${meeting.organizer_name} ${meeting.organizer_surname}`,
-        new Date(meeting.start_time).toLocaleString(),
-        new Date(meeting.end_time).toLocaleString(),
-        meeting.location || '',
-        meeting.department_name || '',
-        meeting.participants.map(p => `${p.name} ${p.surname}`).join('; ')
+      ...events.map(event => [
+        event.title,
+        `${event.organizer_name} ${event.organizer_surname}`,
+        new Date(event.start_time).toLocaleString(),
+        new Date(event.end_time).toLocaleString(),
+        event.location || '',
+        event.department_name || '',
+        event.participants.map(p => `${p.name} ${p.surname}`).join('; ')
       ])
     ].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
 
@@ -80,16 +80,16 @@ const AdminReports = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `meetings-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `events-report-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
-  const getMeetingStats = () => {
-    const total = meetings.length;
-    const upcoming = meetings.filter(m => new Date(m.start_time) > new Date()).length;
-    const past = meetings.filter(m => new Date(m.end_time) < new Date()).length;
-    const ongoing = meetings.filter(m => {
+  const getEventStats = () => {
+    const total = events.length;
+    const upcoming = events.filter(m => new Date(m.start_time) > new Date()).length;
+    const past = events.filter(m => new Date(m.end_time) < new Date()).length;
+    const ongoing = events.filter(m => {
       const now = new Date();
       return new Date(m.start_time) <= now && now <= new Date(m.end_time);
     }).length;
@@ -97,7 +97,7 @@ const AdminReports = () => {
     return { total, upcoming, past, ongoing };
   };
 
-  const stats = getMeetingStats();
+  const stats = getEventStats();
 
   if (loading) {
     return (
@@ -111,8 +111,8 @@ const AdminReports = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Meeting Reports</h1>
-          <p className="mt-2 text-gray-600">Generate reports and analyze meeting data</p>
+          <h1 className="text-3xl font-bold text-gray-900">Event Reports</h1>
+          <p className="mt-2 text-gray-600">Generate reports and analyze event data</p>
         </div>
 
         {/* Statistics Cards */}
@@ -125,7 +125,7 @@ const AdminReports = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Meetings</p>
+                <p className="text-sm font-medium text-gray-600">Total Events</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
               </div>
             </div>
@@ -233,10 +233,10 @@ const AdminReports = () => {
           </button>
         </div>
 
-        {/* Meetings Table */}
+        {/* Events Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Meeting Details</h3>
+            <h3 className="text-lg font-medium text-gray-900">Event Details</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -252,28 +252,28 @@ const AdminReports = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {meetings.map((meeting) => (
-                  <tr key={meeting.id}>
+                {events.map((event) => (
+                  <tr key={event.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {meeting.title}
+                      {event.title}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {meeting.organizer_name} {meeting.organizer_surname}
+                      {event.organizer_name} {event.organizer_surname}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(meeting.start_time).toLocaleString()}
+                      {new Date(event.start_time).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(meeting.end_time).toLocaleString()}
+                      {new Date(event.end_time).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {meeting.location || '-'}
+                      {event.location || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {meeting.department_name || '-'}
+                      {event.department_name || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {meeting.participants.length} participant(s)
+                      {event.participants.length} participant(s)
                     </td>
                   </tr>
                 ))}

@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config();
 
-const MEETINGS_ONLY = process.env.MEETINGS_ONLY === 'true';
+const EVENTS_ONLY = process.env.EVENTS_ONLY === 'true';
 
 import fs from "fs";
 import {
@@ -24,8 +24,8 @@ import {
 } from "./auth.js";
 import { DeleteDepartment, GetDepartments, GetUsersByDepartment, PostDepartment, UpdateDepartment } from "./departments.js";
 import db from "./db.js";
-// Legacy ticketing, reporting, messaging, notifications modules are disabled in meetings-only mode
-import meetingsRouter from "./meetings.js";
+// Legacy ticketing, reporting, messaging, notifications modules are disabled in events-only mode
+import eventsRouter from "./events.js";
 import locationsRouter from "./locations.js";
 import templatesRouter from "./templates.js";
 import notificationsRouter from "./notifications.js";
@@ -116,10 +116,10 @@ app.post("/api/departments", authenticateUser, PostDepartment);
 app.put("/api/departments/:id", authenticateUser, UpdateDepartment);
 app.delete("/api/departments/:id", authenticateUser, DeleteDepartment);
 app.get("/api/departments/users", authenticateUser, GetUsersByDepartment);
-// Legacy ticketing, messaging, reporting, and push/email settings routes removed in meetings-only deployment
+// Legacy ticketing, messaging, reporting, and push/email settings routes removed in events-only deployment
 
-// Meetings API
-app.use("/api/meetings", meetingsRouter);
+// Events API
+app.use("/api/events", eventsRouter);
 
 // Locations API
 app.use("/api/locations", locationsRouter);
@@ -152,7 +152,7 @@ app.get('/api/test-uploads', (req, res) => {
 
 import { createHttpsServer } from './https-server.js';
 
-// Meeting reminder job — runs every 5 minutes, emails participants 1 hour before meetings
+// Event reminder job — runs every 5 minutes, emails participants 1 hour before events
 const runReminderJob = async () => {
   if (process.env.SEND_CREATION_EMAIL !== 'true') return;
   try {
@@ -160,27 +160,27 @@ const runReminderJob = async () => {
       SELECT m.id, m.title, m.start_time, m.location,
              COALESCE(json_agg(jsonb_build_object('email', u.email, 'name', u.name))
                FILTER (WHERE u.email IS NOT NULL AND u.email != ''), '[]') AS participants
-      FROM meetings m
-      LEFT JOIN meeting_participants mp ON mp.meeting_id = m.id
-      LEFT JOIN users u ON u.id = mp.user_id
+      FROM events m
+      LEFT JOIN event_participants ep ON ep.event_id = m.id
+      LEFT JOIN users u ON u.id = ep.user_id
       WHERE m.start_time BETWEEN NOW() + INTERVAL '55 minutes' AND NOW() + INTERVAL '65 minutes'
         AND (m.status IS NULL OR m.status != 'cancelled')
         AND (m.reminder_sent IS NULL OR m.reminder_sent = FALSE)
       GROUP BY m.id
     `);
 
-    for (const meeting of result.rows) {
-      const emails = (meeting.participants || []).filter(p => p.email).map(p => p.email);
+    for (const event of result.rows) {
+      const emails = (event.participants || []).filter(p => p.email).map(p => p.email);
       if (emails.length === 0) continue;
 
-      const subject = `[Sun Valley Meeting Point] Reminder: "${meeting.title}" starts in 1 hour`;
+      const subject = `[Sun Valley Event Hub] Reminder: "${event.title}" starts in 1 hour`;
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; border: 1px solid #fde68a;">
-            <h2 style="margin: 0 0 8px; color: #92400e;">Reminder: Meeting in 1 hour</h2>
-            <h3>${meeting.title}</h3>
-            <p><strong>When:</strong> ${new Date(meeting.start_time).toLocaleString()}</p>
-            ${meeting.location ? `<p><strong>Location:</strong> ${meeting.location}</p>` : ''}
+            <h2 style="margin: 0 0 8px; color: #92400e;">Reminder: Event in 1 hour</h2>
+            <h3>${event.title}</h3>
+            <p><strong>When:</strong> ${new Date(event.start_time).toLocaleString()}</p>
+            ${event.location ? `<p><strong>Location:</strong> ${event.location}</p>` : ''}
           </div>
         </div>`;
 
@@ -190,8 +190,8 @@ const runReminderJob = async () => {
         )
       ));
 
-      await db.query(`UPDATE meetings SET reminder_sent = TRUE WHERE id = $1`, [meeting.id]);
-      console.log(`📧 Reminder sent for meeting "${meeting.title}" to ${emails.length} participants`);
+      await db.query(`UPDATE events SET reminder_sent = TRUE WHERE id = $1`, [event.id]);
+      console.log(`📧 Reminder sent for event "${event.title}" to ${emails.length} participants`);
     }
   } catch (err) {
     console.error('Reminder job error:', err.message);

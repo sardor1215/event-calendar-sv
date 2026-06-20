@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useAuth } from "../../auth";
-import { createMeeting, fetchDepartments } from "../../api";
+import { createEvent, fetchDepartments } from "../../api";
 import { useDropzone } from "react-dropzone";
 import FloatingInput from "../common/FloatingInput";
 import { useToast } from "../../hooks/useToast";
-import { validateMeetingData, sanitizeMeetingData } from "../../utils/validation";
+import { validateEventData, sanitizeEventData } from "../../utils/validation";
 
-const MeetingForm = ({ onClose, onCreated }) => {
-  // Meeting form component for creating new meetings
+const EventForm = ({ onClose, onCreated }) => {
+  // Event form component for creating new events
   const { token, userId, userRole, userDepartment } = useAuth();
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
@@ -53,8 +53,8 @@ const MeetingForm = ({ onClose, onCreated }) => {
     title: "",
     description: "",
     location: "",
-    meeting_number: "",
-    meeting_chair: "",
+    event_number: "",
+    event_chair: "",
     start_time: "",
     end_time: "",
     participants: []
@@ -105,7 +105,7 @@ const MeetingForm = ({ onClose, onCreated }) => {
             location,
           });
           const res = await fetch(
-            `${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/meetings/conflicts?${params}`,
+            `${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/events/conflicts?${params}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (res.ok) {
@@ -392,8 +392,8 @@ const MeetingForm = ({ onClose, onCreated }) => {
     return roles.filter(role => role !== 'admin');
   };
 
-  // Check for meeting conflicts at the selected location and time
-  const checkMeetingConflicts = async () => {
+  // Check for event conflicts at the selected location and time
+  const checkEventConflicts = async () => {
     if (!formData.start_time || !formData.end_time || !formData.location) {
       return [];
     }
@@ -404,7 +404,7 @@ const MeetingForm = ({ onClose, onCreated }) => {
         location: formData.location,
       });
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/meetings/conflicts?${params}`,
+        `${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/events/conflicts?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {
@@ -434,16 +434,16 @@ const MeetingForm = ({ onClose, onCreated }) => {
   // Initialize email popup with all participants selected
   const initializeEmailPopup = () => {
     setEmailParticipants([...(formData.participants || [])]);
-    setEmailSubject(`Meeting Invitation: ${formData.title}`);
+    setEmailSubject(`Event Invitation: ${formData.title}`);
     setEmailMessage(`Dear Participant,
 
-You are cordially invited to attend the following meeting:
+You are cordially invited to attend the following event:
 
-📅 Meeting Details:
+📅 Event Details:
 • Title: ${formData.title}
 • Start Time: ${formatDateTimeGB(formData.start_time)}
 • Location: ${formData.location || 'To be determined'}
-${formData.meeting_chair ? `• Meeting Chair: ${formData.meeting_chair}` : ''}
+${formData.event_chair ? `• Event Chair: ${formData.event_chair}` : ''}
 
 ${formData.description ? `📋 \n${formData.description}` : ''}
 
@@ -452,7 +452,7 @@ ${formData.description ? `📋 \n${formData.description}` : ''}
 Looking forward to seeing you there!
 
 Best regards,
-Meeting Organizer`);
+Event Organizer`);
     setEmailErrors({});
     setShowEmailPopup(true);
   };
@@ -507,18 +507,18 @@ Meeting Organizer`);
 
     setSendingEmail(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/meetings/send-notifications`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/events/send-notifications`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          meetingId: formData.meetingId, // We'll need to get this from the created meeting
+          eventId: formData.eventId, // We'll need to get this from the created event
           participants: emailParticipants,
           subject: emailSubject,
           message: emailMessage,
-          meetingTitle: formData.title,
+          eventTitle: formData.title,
           startTime: formData.start_time,
           endTime: formData.end_time,
           location: formData.location,
@@ -527,7 +527,7 @@ Meeting Organizer`);
       });
 
       if (response.ok) {
-        showSuccess("Emails sent successfully from Sun Valley Meeting Point.");
+        showSuccess("Emails sent successfully from Sun Valley Event Point.");
         setShowEmailPopup(false);
         afterEmailStep();
       } else {
@@ -556,18 +556,18 @@ Meeting Organizer`);
     const fileList = selectedFiles.map(f => `• ${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`).join('\n');
     setFileNotifyMessage(`Dear Participant,
 
-New documents have been attached to the following meeting:
+New documents have been attached to the following event:
 
-📅 Meeting: ${formData.title}
+📅 Event: ${formData.title}
 📅 Start Time: ${formatDateTimeGB(formData.start_time)}
 
 📎 Attached Documents:
 ${fileList}
 
-Please review the attached documents before the meeting.
+Please review the attached documents before the event.
 
 Best regards,
-Meeting Organizer`);
+Event Organizer`);
     setFileNotifyErrors({});
     setShowFileNotifyPopup(true);
   };
@@ -582,15 +582,15 @@ Meeting Organizer`);
 
     setSendingFileNotify(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/meetings/send-notifications`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_IP || "http://192.168.0.109:5000/"}api/events/send-notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          meetingId: formData.meetingId,
+          eventId: formData.eventId,
           participants: fileNotifyParticipants,
           subject: fileNotifySubject,
           message: fileNotifyMessage,
-          meetingTitle: formData.title,
+          eventTitle: formData.title,
           startTime: formData.start_time,
           endTime: formData.end_time,
           location: formData.location,
@@ -618,8 +618,8 @@ Meeting Organizer`);
       title: "",
       description: "",
       location: "",
-      meeting_number: "",
-      meeting_chair: "",
+      event_number: "",
+      event_chair: "",
       start_time: "",
       end_time: "",
       participants: []
@@ -669,7 +669,7 @@ Meeting Organizer`);
       title: template.title || prev.title,
       description: template.description || prev.description,
       location: template.location || prev.location,
-      meeting_chair: template.meeting_chair || prev.meeting_chair,
+      event_chair: template.event_chair || prev.event_chair,
       participants: Array.isArray(template.participant_ids) && template.participant_ids.length > 0
         ? template.participant_ids.map(id => String(id))
         : prev.participants
@@ -688,7 +688,7 @@ Meeting Organizer`);
           title: formData.title,
           description: formData.description,
           location: formData.location,
-          meeting_chair: formData.meeting_chair,
+          event_chair: formData.event_chair,
           participant_ids: (formData.participants || []).map(id => parseInt(id)).filter(id => !isNaN(id))
         })
       });
@@ -711,7 +711,7 @@ Meeting Organizer`);
   };
 
   const validateForm = () => {
-    const newErrors = validateMeetingData(formData);
+    const newErrors = validateEventData(formData);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -729,7 +729,7 @@ Meeting Organizer`);
 
     try {
       // Sanitize form data
-      const sanitizedData = sanitizeMeetingData(formData);
+      const sanitizedData = sanitizeEventData(formData);
       
       const formDataToSend = new FormData();
       
@@ -767,23 +767,23 @@ Meeting Organizer`);
         formDataToSend.append('files', file);
       });
 
-      const meetingResponse = await createMeeting(token, formDataToSend);
+      const eventResponse = await createEvent(token, formDataToSend);
 
-      // Handle both single meeting and recurring meetings response
-      const createdMeetingId = meetingResponse?.id || meetingResponse?.meetings?.[0]?.id;
-      if (createdMeetingId) {
-        setFormData(prev => ({ ...prev, meetingId: createdMeetingId }));
+      // Handle both single event and recurring events response
+      const createdEventId = eventResponse?.id || eventResponse?.events?.[0]?.id;
+      if (createdEventId) {
+        setFormData(prev => ({ ...prev, eventId: createdEventId }));
       }
 
-      const isRecurring = meetingResponse?.meetings?.length > 1;
+      const isRecurring = eventResponse?.events?.length > 1;
       if (isRecurring) {
-        showSuccess(`Created ${meetingResponse.meetings.length} recurring meetings successfully!`);
+        showSuccess(`Created ${eventResponse.events.length} recurring events successfully!`);
         resetFormAndClose();
         return;
       }
 
       // Show success message using toast
-      showSuccess("Meeting created successfully!");
+      showSuccess("Event created successfully!");
 
       // Show email notification popup if there are participants with emails
       if (formData.participants && formData.participants.length > 0) {
@@ -793,8 +793,8 @@ Meeting Organizer`);
       }
 
     } catch (error) {
-      console.error("Error creating meeting:", error);
-      showError("Failed to create meeting: " + (error.message || "Unknown error"));
+      console.error("Error creating event:", error);
+      showError("Failed to create event: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -826,8 +826,8 @@ Meeting Organizer`);
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Create New Meeting</h2>
-                <p className="text-gray-500 text-sm">Schedule and organize your meeting</p>
+                <h2 className="text-xl font-bold text-gray-900">Create New Event</h2>
+                <p className="text-gray-500 text-sm">Schedule and organize your event</p>
               </div>
             </div>
             <button
@@ -869,7 +869,7 @@ Meeting Organizer`);
             {/* Title - Full Width */}
             <div>
               <FloatingInput
-                label="Meeting Title *"
+                label="Event Title *"
                 id="title"
                 name="title"
                 value={formData.title}
@@ -892,22 +892,22 @@ Meeting Organizer`);
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Left Column */}
               <div className="space-y-4">
-                {/* Meeting Number */}
+                {/* Event Number */}
                 <FloatingInput
-                  label="Meeting Number"
-                  id="meeting_number"
-                  name="meeting_number"
-                  value={formData.meeting_number}
+                  label="Event Number"
+                  id="event_number"
+                  name="event_number"
+                  value={formData.event_number}
                   onChange={handleChange}
                   placeholder=" "
                 />
 
-                {/* Meeting Chair */}
+                {/* Event Chair */}
                 <FloatingInput
-                  label="Meeting Chair"
-                  id="meeting_chair"
-                  name="meeting_chair"
-                  value={formData.meeting_chair}
+                  label="Event Chair"
+                  id="event_chair"
+                  name="event_chair"
+                  value={formData.event_chair}
                   onChange={handleChange}
                   placeholder=" "
                 />
@@ -1007,7 +1007,7 @@ Meeting Organizer`);
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
-                        Meeting duration: {minutes} minutes
+                        Event duration: {minutes} minutes
                       </p>
                     );
                   }
@@ -1017,7 +1017,7 @@ Meeting Organizer`);
               </div>
             </div>
 
-            {/* Recurring Meeting Options */}
+            {/* Recurring Event Options */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <input
@@ -1028,7 +1028,7 @@ Meeting Organizer`);
                   className="w-4 h-4 text-yellow-500 focus:ring-yellow-400 rounded"
                 />
                 <label htmlFor="recurring" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                  Make this a recurring meeting
+                  Make this a recurring event
                 </label>
               </div>
 
@@ -1556,7 +1556,7 @@ Meeting Organizer`);
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Create Meeting
+                    Create Event
                   </>
                 )}
               </button>
@@ -1581,7 +1581,7 @@ Meeting Organizer`);
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">Send Email Notifications</h2>
-                    <p className="text-gray-500 text-sm">Notify participants about the meeting</p>
+                    <p className="text-gray-500 text-sm">Notify participants about the event</p>
                   </div>
                 </div>
                 <button
@@ -1719,7 +1719,7 @@ Meeting Organizer`);
                           <svg className="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
-                          No participants selected for this meeting
+                          No participants selected for this event
                         </div>
                       )}
                     </div>
@@ -1805,7 +1805,7 @@ Meeting Organizer`);
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">Notify About Attached Documents</h2>
-                    <p className="text-gray-500 text-sm">Inform participants about the files added to this meeting</p>
+                    <p className="text-gray-500 text-sm">Inform participants about the files added to this event</p>
                   </div>
                 </div>
                 <button
@@ -1825,7 +1825,7 @@ Meeting Organizer`);
                     <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
-                    {selectedFiles.length} file(s) attached to this meeting
+                    {selectedFiles.length} file(s) attached to this event
                   </h3>
                   <div className="space-y-1">
                     {selectedFiles.map((file, idx) => (
@@ -1931,7 +1931,7 @@ Meeting Organizer`);
                         );
                       })
                     ) : (
-                      <div className="text-sm text-gray-500 text-center py-4">No participants in this meeting</div>
+                      <div className="text-sm text-gray-500 text-center py-4">No participants in this event</div>
                     )}
                   </div>
                   {fileNotifyErrors.participants && (
@@ -1992,9 +1992,9 @@ Meeting Organizer`);
         </div>
       )}
 
-      {/* Meeting Templates Modal */}
+      {/* Event Templates Modal */}
     </div>
   );
 };
 
-export default MeetingForm;
+export default EventForm;

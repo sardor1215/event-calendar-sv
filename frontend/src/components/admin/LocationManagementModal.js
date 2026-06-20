@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth';
 import IconClose from '../SVG/IconClose';
 import IconAdd from '../SVG/IconAdd';
@@ -183,7 +183,7 @@ const LocationManagementModal = ({ isOpen, onClose }) => {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Location Management</h3>
-                <p className="text-gray-500 text-sm">Manage meeting locations</p>
+                <p className="text-gray-500 text-sm">Manage event locations</p>
               </div>
             </div>
             <button
@@ -200,7 +200,7 @@ const LocationManagementModal = ({ isOpen, onClose }) => {
             // Locations List View
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h4 className="text-lg font-semibold text-gray-900">Meeting Locations</h4>
+                <h4 className="text-lg font-semibold text-gray-900">Event Locations</h4>
                 <button
                   onClick={() => setShowForm(true)}
                   className="inline-flex items-center px-4 py-2 bg-yellow-400 text-gray-900 font-semibold text-sm font-medium rounded-md hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400"
@@ -223,7 +223,7 @@ const LocationManagementModal = ({ isOpen, onClose }) => {
                     </svg>
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No locations found</h3>
-                  <p className="text-gray-500 mb-4">Get started by creating your first meeting location.</p>
+                  <p className="text-gray-500 mb-4">Get started by creating your first event location.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

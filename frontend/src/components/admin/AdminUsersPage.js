@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth";
 import { deleteUser, editUser as editUserApi } from "../../tools/Tools";
@@ -352,10 +352,10 @@ const AdminUsersPage = () => {
               Calendar
             </Link>
             <Link
-              to="/admin/meetings"
+              to="/admin/events"
               className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
             >
-              Meetings
+              Events
             </Link>
           </div> */}
           <RefreshButton onClick={refreshData} loading={loading} />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useAuth } from "../auth";
 import { useNavigate, useLocation } from "react-router-dom";
 import IconCalendar from "./SVG/IconCalendar";
@@ -47,7 +47,7 @@ export default function Navbar() {
                 src="/sunvalley-logo.png"
                 className="h-20 w-auto cursor-pointer"
                 alt="Sun Valley Cyprus"
-                onClick={() => navigate(userRole === "admin" ? "/calendar" : "/user/meetings")}
+                onClick={() => navigate(userRole === "admin" ? "/calendar" : "/user/events")}
               />
             </div>
 

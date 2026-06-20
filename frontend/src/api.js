@@ -1,4 +1,4 @@
-// export const serverIP = "https://ticket-system-server-kzww.vercel.app/";
+﻿// export const serverIP = "https://ticket-system-server-kzww.vercel.app/";
 
 // Auto-detect env first; fall back by protocol
 const getServerIP = () => {
@@ -257,10 +257,10 @@ export const fetchCountsTree = async (token) => {
   }
 };
 
-// Meetings API helpers
-export const createMeeting = async (token, formData) => {
+// Events API helpers
+export const createEvent = async (token, formData) => {
   try {
-    const response = await fetch(`${serverIP}api/meetings`, {
+    const response = await fetch(`${serverIP}api/events`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -270,20 +270,20 @@ export const createMeeting = async (token, formData) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to create meeting");
+      throw new Error(errorData.error || "Failed to create event");
     }
 
     return response.json();
   } catch (error) {
-    console.error("Error creating meeting:", error);
+    console.error("Error creating event:", error);
     throw error;
   }
 };
 
-export const fetchMeetings = async (token, query = {}) => {
+export const fetchEvents = async (token, query = {}) => {
   try {
     const queryString = new URLSearchParams(query).toString();
-    const url = `${serverIP}api/meetings${queryString ? `?${queryString}` : ""}`;
+    const url = `${serverIP}api/events${queryString ? `?${queryString}` : ""}`;
     
     const response = await fetch(url, {
       method: "GET",
@@ -294,19 +294,19 @@ export const fetchMeetings = async (token, query = {}) => {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch meetings");
+      throw new Error("Failed to fetch events");
     }
 
     return response.json();
   } catch (error) {
-    console.error("Error fetching meetings:", error);
+    console.error("Error fetching events:", error);
     throw error;
   }
 };
 
-export const fetchMeetingById = async (token, meetingId) => {
+export const fetchEventById = async (token, eventId) => {
   try {
-    const response = await fetch(`${serverIP}api/meetings/${meetingId}`, {
+    const response = await fetch(`${serverIP}api/events/${eventId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -315,19 +315,19 @@ export const fetchMeetingById = async (token, meetingId) => {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch meeting");
+      throw new Error("Failed to fetch event");
     }
 
     return response.json();
   } catch (error) {
-    console.error("Error fetching meeting:", error);
+    console.error("Error fetching event:", error);
     throw error;
   }
 };
 
-export const updateMeeting = async (token, meetingId, formData) => {
+export const updateEvent = async (token, eventId, formData) => {
   try {
-    const response = await fetch(`${serverIP}api/meetings/${meetingId}`, {
+    const response = await fetch(`${serverIP}api/events/${eventId}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -337,19 +337,19 @@ export const updateMeeting = async (token, meetingId, formData) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to update meeting");
+      throw new Error(errorData.error || "Failed to update event");
     }
 
     return response.json();
   } catch (error) {
-    console.error("Error updating meeting:", error);
+    console.error("Error updating event:", error);
     throw error;
   }
 };
 
-export const deleteMeeting = async (token, meetingId) => {
+export const deleteEvent = async (token, eventId) => {
   try {
-    const response = await fetch(`${serverIP}api/meetings/${meetingId}`, {
+    const response = await fetch(`${serverIP}api/events/${eventId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -359,12 +359,12 @@ export const deleteMeeting = async (token, meetingId) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to delete meeting");
+      throw new Error(errorData.error || "Failed to delete event");
     }
 
     return response.json();
   } catch (error) {
-    console.error("Error deleting meeting:", error);
+    console.error("Error deleting event:", error);
     throw error;
   }
 };
