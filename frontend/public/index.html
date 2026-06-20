@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#f59e0b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <meta
+      name="description"
+      content="Sun Valley Meeting Point - Schedule, organize, and track meetings efficiently"
+    />
+    
+    <!-- SEO / Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Sun Valley Meeting Point" />
+    <meta property="og:description" content="Sun Valley Meeting Point - Schedule, organize, and track meetings efficiently" />
+    <meta property="og:url" content="https://sv-meeting.vercel.app/" />
+    <meta property="og:image" content="/logo512.png" />
+    <meta property="og:site_name" content="Sun Valley Meeting Point" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Sun Valley Meeting Point" />
+    <meta name="twitter:description" content="Sun Valley Meeting Point - Schedule, organize, and track meetings efficiently" />
+    <meta name="twitter:image" content="/logo512.png" />
+
+    <link rel="canonical" href="https://sv-meeting.vercel.app/" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sun Valley Meeting Point" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Icons -->
+    <!-- <link rel="apple-touch-icon" href="/logo512.png" /> -->
+    <!-- <link rel="icon" type="image/png" sizes="192x192" href="/logo512.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/logo512.png" /> -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://www.sunvalleycyprus.com" />
+    
+    <title>Sun Valley Meeting Point</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    
+    <!-- Fix PWA double-click delay -->
+    <script>
+      // Fix 300ms tap delay on mobile
+      function fixTouchDelay() {
+        const buttons = document.querySelectorAll('button, a, [role="button"], .clickable');
+        buttons.forEach(btn => {
+          btn.style.touchAction = 'manipulation';
+        });
+      }
+      
+      // Run on DOM content loaded
+      document.addEventListener('DOMContentLoaded', fixTouchDelay);
+      
+      // Run when new content is added (for React apps)
+      const observer = new MutationObserver(fixTouchDelay);
+      observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

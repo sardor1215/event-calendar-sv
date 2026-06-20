@@ -1,0 +1,22 @@
+{
+  "short_name": "SV Meeting",
+  "name": "Sun Valley Meeting Point",
+  "description": "Sun Valley Meeting Point - Schedule, organize, and track meetings efficiently",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16 192x192 512x512",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#f59e0b",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "business"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

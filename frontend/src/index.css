@@ -1,0 +1,630 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* PWA Update Animation */
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-down {
+    animation: slide-down 0.3s ease-out;
+  }
+  
+body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Focus styles */
+  *:focus {
+    outline: none;
+  }
+  
+  *:focus-visible:not(input):not(select):not(textarea) {
+    @apply ring-2 ring-primary-500 ring-offset-2 ring-offset-white;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .card {
+      @apply border-2 border-gray-900;
+    }
+    
+    .btn {
+      @apply border-2;
+    }
+  }
+
+  /* Enhanced sticky positioning for mobile */
+  .sticky-nav {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+}
+
+@layer components {
+  /* Button Components */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.97] relative overflow-hidden;
+  }
+  
+  .btn:before {
+    @apply absolute inset-0 bg-white/20 scale-0 rounded-xl transition-transform duration-300;
+  }
+  
+  .btn:hover:before {
+    @apply scale-100;
+  }
+  
+  .btn-primary {
+    @apply btn bg-yellow-400 text-gray-900 hover:bg-yellow-300 focus:ring-yellow-400 shadow-md hover:shadow-lg font-semibold;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 focus:ring-gray-300 shadow-sm hover:shadow;
+  }
+  
+  .btn-success {
+    @apply btn bg-gradient-to-br from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 focus:ring-emerald-500 shadow-lg hover:shadow-xl;
+  }
+  
+  .btn-danger {
+    @apply btn bg-gradient-to-br from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 focus:ring-red-500 shadow-lg hover:shadow-xl;
+  }
+  
+  .btn-ghost {
+    @apply btn bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-300;
+  }
+  
+  .btn-glass {
+    @apply btn bg-white/10 backdrop-blur-glass text-white border border-white/20 hover:bg-white/20 hover:border-white/30 shadow-glass;
+  }
+  
+  .btn-neon {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 shadow-neon hover:animate-glow;
+  }
+  
+  /* Card Components */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden;
+  }
+  
+  .card-hover {
+    @apply card hover:-translate-y-1 hover:scale-[1.02];
+  }
+  
+  .card-glass {
+    @apply bg-white/60 backdrop-blur-xl border border-white/20 shadow-xl rounded-2xl overflow-hidden;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-br from-white via-primary-50/30 to-primary-100/20 rounded-2xl border border-primary-100 shadow-sm hover:shadow-lg transition-all duration-300;
+  }
+  
+  .card-floating {
+    @apply card shadow-float hover:shadow-strong animate-float;
+  }
+  
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200/60 backdrop-blur-sm;
+  }
+  
+  .card-body {
+    @apply px-6 py-4;
+  }
+  
+  .card-footer {
+    @apply px-6 py-4 border-t border-gray-200/60 bg-gradient-to-r from-gray-50/80 to-gray-100/60 rounded-b-xl backdrop-blur-sm;
+  }
+  
+  /* Input Components */
+  .input {
+    @apply block w-full px-4 py-3 text-base border border-gray-200 rounded-xl bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 hover:border-gray-300 transition-all duration-200;
+  }
+  
+  .input-floating {
+    @apply relative;
+  }
+  
+  .input-floating input {
+    @apply input pt-6 pb-2;
+  }
+  
+  .input-floating label {
+    @apply absolute left-4 top-3 text-gray-500 transition-all duration-200 pointer-events-none;
+  }
+  
+  .input-floating input:focus + label,
+  .input-floating input:not(:placeholder-shown) + label {
+    @apply text-xs top-1 text-primary-600;
+  }
+  
+  .input-error {
+    @apply input border-red-300 focus:ring-red-500/20 focus:border-red-500 bg-red-50/50;
+  }
+  
+  /* Badge Components */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105;
+  }
+  
+  .badge-primary {
+    @apply badge bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 shadow-soft hover:shadow-glow border border-primary-200/50;
+  }
+  
+  .badge-success {
+    @apply badge bg-gradient-to-r from-success-100 to-success-200 text-success-800 shadow-soft border border-success-200/50;
+  }
+  
+  .badge-warning {
+    @apply badge bg-gradient-to-r from-warning-100 to-warning-200 text-warning-800 shadow-soft border border-warning-200/50;
+  }
+  
+  .badge-error {
+    @apply badge bg-gradient-to-r from-error-100 to-error-200 text-error-800 shadow-soft border border-error-200/50;
+  }
+  
+  .badge-glass {
+    @apply badge bg-white/20 backdrop-blur-sm text-white border border-white/30 shadow-glass;
+  }
+  
+  .badge-glow {
+    @apply badge bg-primary-500 text-white shadow-glow animate-pulse-soft;
+  }
+  
+  /* Modal Components */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black/40 via-black/60 to-black/40 backdrop-blur-md;
+  }
+  
+  .modal-content {
+    @apply bg-white/95 backdrop-blur-glass rounded-3xl shadow-strong max-w-md w-full mx-4 transform transition-all duration-500 border border-white/20 animate-scale-in;
+  }
+  
+  .modal-glass {
+    @apply bg-white/10 backdrop-blur-glass rounded-3xl shadow-glass border border-white/20 text-white;
+  }
+  
+  .modal-gradient {
+    @apply bg-gradient-to-br from-white via-primary-50/30 to-primary-100/20 backdrop-blur-sm rounded-3xl shadow-glow border border-primary-200/30;
+  }
+  
+  /* Loading Components */
+  .loading-spinner {
+    @apply animate-spin h-5 w-5 text-current;
+  }
+  
+  /* Advanced Interactive Components */
+  .interactive-card {
+    @apply card cursor-pointer transform transition-all duration-300 hover:-translate-y-2 hover:shadow-float active:scale-98;
+  }
+  
+  .glass-panel {
+    @apply bg-white/10 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 bg-clip-text text-transparent animate-gradient-x;
+  }
+  
+  .shimmer-effect {
+    @apply relative overflow-hidden;
+  }
+  
+  .shimmer-effect::before {
+    content: '';
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer;
+  }
+  
+  .floating-action {
+    @apply fixed bottom-6 right-6 z-40 btn-primary rounded-full p-4 shadow-float hover:shadow-glow-lg animate-bounce-gentle;
+  }
+  
+  .status-indicator {
+    @apply w-3 h-3 rounded-full animate-pulse-soft;
+  }
+  
+  .status-online {
+    @apply status-indicator bg-success-400 shadow-glow;
+  }
+  
+  .status-offline {
+    @apply status-indicator bg-gray-400;
+  }
+  
+  .status-busy {
+    @apply status-indicator bg-error-400 shadow-glow;
+  }
+
+  /* Login page specific styles */
+  .background-login {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #92400e 100%);
+  }
+
+  .sunvalley-logo {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  }
+  
+  /* Mobile-first responsive utilities */
+  .mobile-menu-button {
+    @apply lg:hidden p-3 rounded-xl text-gray-600 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-300 shadow-soft hover:shadow-medium;
+  }
+
+  /* Enhanced mobile sidebar toggle */
+  .mobile-sidebar-toggle {
+    @apply fixed z-50 lg:hidden touch-target transition-all duration-300 transform animate-in;
+    /* Safe area positioning */
+    top: max(1rem, env(safe-area-inset-top, 1rem));
+    left: max(1rem, env(safe-area-inset-left, 1rem));
+  }
+
+  .mobile-sidebar-toggle-open {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow;
+  }
+
+  .mobile-sidebar-toggle-closed {
+    @apply bg-white/90 backdrop-blur-sm text-gray-700 shadow-soft border border-gray-200/60;
+  }
+  
+  /* Touch-friendly sizing */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Hide global navigation buttons that should only be in Settings */
+  /* Target any button with "Direct" or "Sign out" text */
+  button:contains("Direct"),
+  button:contains("Sign out"),
+  nav button:contains("Direct"),
+  nav button:contains("Sign out"),
+  .global-nav button:contains("Direct"),
+  .global-nav button:contains("Sign out"),
+  /* Target by common PWA navigation classes */
+  .pwa-nav button,
+  .app-nav button,
+  .global-header button,
+  /* Target specific button text patterns */
+  [class*="nav"] button,
+  [class*="header"] button {
+    display: none !important;
+  }
+  
+  /* Alternative: Hide buttons with specific text content */
+  button[title*="Direct"],
+  button[title*="Sign out"],
+  button[aria-label*="Direct"],
+  button[aria-label*="Sign out"] {
+    display: none !important;
+  }
+
+  /* Fix PWA double-click issue - Comprehensive solution */
+  button, a, [role="button"], .clickable, 
+  input[type="button"], input[type="submit"], input[type="reset"],
+  .btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-light, .btn-dark,
+  .touch-target, [data-clickable], [tabindex="0"] {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Prevent double-tap zoom on clickable elements */
+  button, input, select, textarea, .clickable, .touch-target {
+    touch-action: manipulation;
+  }
+
+  /* Ensure proper touch behavior on mobile */
+  @media (hover: none) and (pointer: coarse) {
+    button, a, [role="button"], .clickable {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Remove hover effects on touch devices */
+    button:hover, a:hover, [role="button"]:hover, .clickable:hover {
+      transform: none;
+    }
+  }
+  
+  /* Hover effects */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1 hover:shadow-medium;
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow;
+  }
+  
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+    /* PWA scrolling improvements */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184);
+  }
+  
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+    /* Animation utilities */
+  .animate-in {
+    animation: animateIn 0.3s ease-out forwards;
+  }
+
+  @keyframes animateIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .animate-bounce-gentle {
+    animation: bounce-gentle 2s infinite;
+  }
+
+  @keyframes bounce-gentle {
+    0%, 20%, 53%, 80%, 100% {
+      animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+      transform: translate3d(0,0,0);
+    }
+    40%, 43% {
+      animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+      transform: translate3d(0, -8px, 0);
+    }
+    70% {
+      animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+      transform: translate3d(0, -4px, 0);
+    }
+    90% {
+      transform: translate3d(0,-2px,0);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+
+  @keyframes shake {
+    10%, 90% {
+      transform: translate3d(-1px, 0, 0);
+    }
+    20%, 80% {
+      transform: translate3d(2px, 0, 0);
+    }
+    30%, 50%, 70% {
+      transform: translate3d(-4px, 0, 0);
+    }
+    40%, 60% {
+      transform: translate3d(4px, 0, 0);
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .printable {
+    padding: 20px;
+    font-family: 'Inter', Arial, sans-serif;
+    color: black !important;
+    background: white !important;
+  }
+  
+  .printable h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+  
+  .printable h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  
+  .printable p {
+    font-size: 16px;
+    margin: 5px 0;
+    line-height: 1.5;
+  }
+  
+  .printable .message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #e5e5e5;
+  }
+  
+  .printable .ticket-details {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 15px;
+  }
+}
+
+/* Dark mode support (for future implementation) */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-auto body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
+
+/* FullCalendar overrides */
+
+/* List/Agenda view day headers */
+.fc-list-day-cushion {
+  background-color: #fef9c3 !important;
+}
+
+.fc-list-day-text,
+.fc-list-day-side-text {
+  color: #713f12 !important;
+  font-weight: 600 !important;
+}
+
+.fc-list-event:hover td {
+  background-color: #fefce8 !important;
+}
+
+.fc-list-empty {
+  background-color: #fefce8 !important;
+}
+
+.fc-list-table td {
+  border-color: #e5e7eb !important;
+}
+
+/* Remove border from timeGrid events — color comes from backgroundColor only */
+.fc-timegrid-event {
+  border: none !important;
+}
+
+/* Hide drag-resize handles (appear as dots at bottom of events) */
+.fc-event-resizer {
+  display: none !important;
+}
+
+/* Business hours — subtle gray tint outside 09-17 */
+.fc-non-business {
+  background-color: rgba(243, 244, 246, 0.4) !important;
+}
