@@ -628,3 +628,158 @@ body {
 .fc-non-business {
   background-color: rgba(243, 244, 246, 0.4) !important;
 }
+
+/* ── Today cell ── */
+.fc .fc-day-today {
+  background: rgba(245, 158, 11, 0.05) !important;
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+  background: #f59e0b;
+  color: #fff;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin: 3px;
+  line-height: 1;
+}
+
+/* ── Column headers ── */
+.fc .fc-col-header-cell {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.fc .fc-col-header-cell-cushion {
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #9ca3af;
+  text-decoration: none;
+  padding: 9px 4px;
+}
+.fc .fc-col-header-cell-cushion:hover {
+  color: #6b7280;
+  text-decoration: none;
+}
+
+/* ── Day numbers ── */
+.fc .fc-daygrid-day-number {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: #374151;
+  padding: 5px 7px;
+  text-decoration: none;
+}
+.fc .fc-daygrid-day-number:hover {
+  color: #d97706;
+}
+
+/* ── Event pills — segment-aware border-radius ── */
+.fc .fc-daygrid-event {
+  border-radius: 0;           /* continuation / middle segments: no rounding */
+  border: none;
+  margin: 1px 0;
+}
+.fc .fc-daygrid-event.fc-event-start {
+  border-radius: 5px 0 0 5px; /* start cap */
+  margin-left: 2px;
+}
+.fc .fc-daygrid-event.fc-event-end {
+  border-radius: 0 5px 5px 0; /* end cap */
+  margin-right: 2px;
+}
+.fc .fc-daygrid-event.fc-event-start.fc-event-end {
+  border-radius: 6px;         /* single-day: fully rounded */
+  margin: 1px 2px;
+}
+.fc .fc-daygrid-event-harness {
+  margin-bottom: 1px;
+}
+.fc .fc-event {
+  font-size: 0.72rem;
+}
+
+/* ── "+X more" link ── */
+.fc .fc-daygrid-more-link {
+  font-size: 0.67rem;
+  font-weight: 600;
+  color: #9ca3af;
+  padding: 1px 4px;
+}
+.fc .fc-daygrid-more-link:hover {
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+/* ── Time grid ── */
+.fc .fc-timegrid-slot {
+  height: 38px;
+}
+.fc .fc-timegrid-slot-label {
+  font-size: 0.67rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+.fc .fc-timegrid-event {
+  border-radius: 6px;
+}
+
+/* ── Now indicator — amber ── */
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #f59e0b;
+  border-width: 2px;
+}
+.fc .fc-timegrid-now-indicator-arrow {
+  border-top-color: #f59e0b;
+  border-bottom-color: #f59e0b;
+}
+
+/* ── Ongoing event pulse ── */
+.fc-event-ongoing {
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.45) !important;
+  animation: fc-event-pulse 2s ease-in-out infinite;
+}
+@keyframes fc-event-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.08); }
+}
+
+/* ── Location conflict — animated red ring ── */
+.fc-event-conflict {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.7) !important;
+  animation: fc-conflict-pulse 1.8s ease-in-out infinite;
+}
+@keyframes fc-conflict-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.7); }
+  50%       { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+}
+
+/* ── Recurring event — subtle diagonal stripe on the left cap ── */
+.fc-event-start.fc-event-recurring::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,0.35) 0px,
+    rgba(255,255,255,0.35) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+  border-radius: 5px 0 0 5px;
+  pointer-events: none;
+}
+
+/* ── FC scroller ── */
+.fc .fc-scroller::-webkit-scrollbar { width: 4px; height: 4px; }
+.fc .fc-scroller::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 2px;
+}
+.fc .fc-scroller::-webkit-scrollbar-thumb:hover { background: #d1d5db; }

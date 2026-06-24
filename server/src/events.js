@@ -242,7 +242,8 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
       end_time,
       participants = "[]",
       recurring = "false",
-      recurringOptions = "{}"
+      recurringOptions = "{}",
+      color
     } = req.body;
 
     const organizer_id = req.user.id;
@@ -284,9 +285,9 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
 
       for (const { start: s, end: e } of dates) {
         const er = await db.query(
-          `INSERT INTO events (title, description, organizer_id, department_id, location, event_number, event_chair, start_time, end_time, recurring_group_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-          [title, description, organizer_id, department_id || null, location, event_number || null, event_chair || null, s.toISOString(), e.toISOString(), recurringGroupId]
+          `INSERT INTO events (title, description, organizer_id, department_id, location, event_number, event_chair, start_time, end_time, recurring_group_id, color)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+          [title, description, organizer_id, department_id || null, location, event_number || null, event_chair || null, s.toISOString(), e.toISOString(), recurringGroupId, color || null]
         );
         const ev = er.rows[0];
         await addParticipants(ev.id, participantIds);
@@ -297,10 +298,10 @@ router.post("/", authenticateUser, upload.array("files"), async (req, res) => {
     }
 
     const eventResult = await db.query(
-      `INSERT INTO events (title, description, organizer_id, department_id, location, event_number, event_chair, start_time, end_time)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO events (title, description, organizer_id, department_id, location, event_number, event_chair, start_time, end_time, color)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [title, description, organizer_id, department_id || null, location, event_number || null, event_chair || null, start_time, end_time]
+      [title, description, organizer_id, department_id || null, location, event_number || null, event_chair || null, start_time, end_time, color || null]
     );
 
     const event = eventResult.rows[0];
@@ -450,7 +451,8 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
       start_time,
       end_time,
       participants = "[]",
-      remove_file_ids = "[]"
+      remove_file_ids = "[]",
+      color
     } = req.body;
 
     const existingEvent = await db.query(
@@ -473,10 +475,11 @@ router.put("/:id", authenticateUser, upload.array("files"), async (req, res) => 
         department_id = COALESCE($4, department_id),
         location = COALESCE($5, location),
         start_time = COALESCE($6, start_time),
-        end_time = COALESCE($7, end_time)
+        end_time = COALESCE($7, end_time),
+        color = NULLIF($8, '')
        WHERE id = $1
        RETURNING *`,
-      [id, title, description, department_id, location, start_time, end_time]
+      [id, title, description, department_id, location, start_time, end_time, color || '']
     );
 
     const updatedEvent = updateResult.rows[0];

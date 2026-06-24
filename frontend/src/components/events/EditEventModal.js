@@ -17,6 +17,7 @@ const EditEventModal = ({ eventId, onClose, onUpdated }) => {
     event_chair: "",
     start_time: "",
     end_time: "",
+    color: "",
   });
   const [participants, setParticipants] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -62,6 +63,7 @@ const EditEventModal = ({ eventId, onClose, onUpdated }) => {
           event_chair: data.event_chair || "",
           start_time: data.start_time ? toLocalInputValue(data.start_time) : "",
           end_time: data.end_time ? toLocalInputValue(data.end_time) : "",
+          color: data.color || "",
         });
         setParticipants(Array.isArray(data.participants) ? data.participants.map(p => String(p.id)) : []);
         setExistingFiles(Array.isArray(data.files) ? data.files : []);
@@ -205,6 +207,7 @@ Event Organizer`);
       fd.append("event_chair", formData.event_chair);
       fd.append("start_time", formData.start_time);
       fd.append("end_time", formData.end_time);
+      fd.append("color", formData.color || "");
       // participants
       fd.append('participants', JSON.stringify(participants.map(id => Number(id)).filter(n => Number.isFinite(n))));
       // files to remove
@@ -272,6 +275,62 @@ Event Organizer`);
           </div>
 
           <FloatingInput label="Description" id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
+
+          {/* Color picker */}
+          {(() => {
+            const COLORS = [
+              { value: '#3b82f6', label: 'Blue' },
+              { value: '#10b981', label: 'Green' },
+              { value: '#ec4899', label: 'Pink' },
+              { value: '#f59e0b', label: 'Amber' },
+              { value: '#8b5cf6', label: 'Purple' },
+              { value: '#ef4444', label: 'Red' },
+              { value: '#06b6d4', label: 'Cyan' },
+              { value: '#84cc16', label: 'Lime' },
+            ];
+            return (
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-700 flex-shrink-0">Color</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    title="No color"
+                    onClick={() => setFormData(prev => ({ ...prev, color: '' }))}
+                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                      !formData.color ? 'border-gray-400 ring-2 ring-gray-300 ring-offset-1' : 'border-gray-300 hover:border-gray-400'
+                    } bg-white`}
+                  >
+                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  {COLORS.map(c => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      title={c.label}
+                      onClick={() => setFormData(prev => ({ ...prev, color: c.value }))}
+                      className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                        formData.color === c.value ? 'border-white ring-2 ring-offset-1 scale-110' : 'border-transparent hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: c.value }}
+                    >
+                      {formData.color === c.value && (
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {formData.color && (
+                  <span className="text-xs text-gray-500">
+                    {COLORS.find(c => c.value === formData.color)?.label}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Participants */}
           <div>

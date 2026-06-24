@@ -6,7 +6,7 @@ import FloatingInput from "../common/FloatingInput";
 import { useToast } from "../../hooks/useToast";
 import { validateEventData, sanitizeEventData } from "../../utils/validation";
 
-const EventForm = ({ onClose, onCreated }) => {
+const EventForm = ({ onClose, onCreated, initialData }) => {
   // Event form component for creating new events
   const { token, userId, userRole, userDepartment } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -41,6 +41,7 @@ const EventForm = ({ onClose, onCreated }) => {
     isRecurring: false,
     frequency: 'weekly',
     interval: 1,
+    endType: 'count',
     endDate: '',
     occurrences: 5
   });
@@ -50,14 +51,15 @@ const EventForm = ({ onClose, onCreated }) => {
   const [templateName, setTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    location: "",
-    event_number: "",
-    event_chair: "",
-    start_time: "",
-    end_time: "",
-    participants: []
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    location: initialData?.location || "",
+    event_number: initialData?.event_number || "",
+    event_chair: initialData?.event_chair || "",
+    start_time: initialData?.start_time || "",
+    end_time: initialData?.end_time || "",
+    participants: initialData?.participants || [],
+    color: initialData?.color || ""
   });
   const [errors, setErrors] = useState({});
 
@@ -756,7 +758,7 @@ Event Organizer`);
         formDataToSend.append('recurringOptions', JSON.stringify({
           frequency: recurringOptions.frequency,
           interval: recurringOptions.interval,
-          endType: 'count',
+          endType: recurringOptions.endType || 'count',
           count: recurringOptions.occurrences || 5,
           endDate: recurringOptions.endDate || ''
         }));
@@ -1017,57 +1019,212 @@ Event Organizer`);
               </div>
             </div>
 
+            {/* Event Color */}
+            {(() => {
+              const COLORS = [
+                { value: '#3b82f6', label: 'Blue' },
+                { value: '#10b981', label: 'Green' },
+                { value: '#ec4899', label: 'Pink' },
+                { value: '#f59e0b', label: 'Amber' },
+                { value: '#8b5cf6', label: 'Purple' },
+                { value: '#ef4444', label: 'Red' },
+                { value: '#06b6d4', label: 'Cyan' },
+                { value: '#84cc16', label: 'Lime' },
+              ];
+              return (
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-gray-700 flex-shrink-0">Color</label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* No color option */}
+                    <button
+                      type="button"
+                      title="No color"
+                      onClick={() => setFormData(prev => ({ ...prev, color: '' }))}
+                      className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                        !formData.color ? 'border-gray-400 ring-2 ring-gray-300 ring-offset-1' : 'border-gray-300 hover:border-gray-400'
+                      } bg-white`}
+                    >
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    {COLORS.map(c => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        title={c.label}
+                        onClick={() => setFormData(prev => ({ ...prev, color: c.value }))}
+                        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                          formData.color === c.value ? 'border-white ring-2 ring-offset-1 scale-110' : 'border-transparent hover:scale-105'
+                        }`}
+                        style={{ backgroundColor: c.value }}
+                      >
+                        {formData.color === c.value && (
+                          <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {formData.color && (
+                    <span className="text-xs text-gray-500">
+                      {COLORS.find(c => c.value === formData.color)?.label}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Recurring Event Options */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <input
-                  type="checkbox"
-                  id="recurring"
-                  checked={recurringOptions.isRecurring}
-                  onChange={(e) => setRecurringOptions(prev => ({ ...prev, isRecurring: e.target.checked }))}
-                  className="w-4 h-4 text-yellow-500 focus:ring-yellow-400 rounded"
-                />
-                <label htmlFor="recurring" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                  Make this a recurring event
-                </label>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              {/* Header row with toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="text-sm font-semibold text-gray-800">Recurring event</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRecurringOptions(prev => ({ ...prev, isRecurring: !prev.isRecurring }))}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-1 ${
+                    recurringOptions.isRecurring ? 'bg-yellow-400' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                    recurringOptions.isRecurring ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
               </div>
 
               {recurringOptions.isRecurring && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                <div className="mt-4 space-y-4">
+
+                  {/* Repeat cadence row */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Frequency</label>
-                    <select
-                      value={recurringOptions.frequency}
-                      onChange={(e) => setRecurringOptions(prev => ({ ...prev, frequency: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Repeats</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 flex-shrink-0">Every</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={recurringOptions.interval}
+                        onChange={(e) => setRecurringOptions(prev => ({ ...prev, interval: Math.max(1, parseInt(e.target.value) || 1) }))}
+                        className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm text-center font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white"
+                      />
+                      <select
+                        value={recurringOptions.frequency}
+                        onChange={(e) => setRecurringOptions(prev => ({ ...prev, frequency: e.target.value }))}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white"
+                      >
+                        <option value="daily">{recurringOptions.interval === 1 ? 'Day' : 'Days'}</option>
+                        <option value="weekly">{recurringOptions.interval === 1 ? 'Week' : 'Weeks'}</option>
+                        <option value="monthly">{recurringOptions.interval === 1 ? 'Month' : 'Months'}</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* End condition */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Repeat every</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="12"
-                      value={recurringOptions.interval}
-                      onChange={(e) => setRecurringOptions(prev => ({ ...prev, interval: parseInt(e.target.value) || 1 }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    />
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ends</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="recurringEndType"
+                          checked={recurringOptions.endType === 'count'}
+                          onChange={() => setRecurringOptions(prev => ({ ...prev, endType: 'count' }))}
+                          className="text-yellow-500 focus:ring-yellow-400 flex-shrink-0"
+                        />
+                        <span className="text-sm text-gray-700 flex-shrink-0">After</span>
+                        <input
+                          type="number"
+                          min="2"
+                          max="52"
+                          value={recurringOptions.occurrences}
+                          disabled={recurringOptions.endType !== 'count'}
+                          onChange={(e) => setRecurringOptions(prev => ({ ...prev, occurrences: Math.max(2, parseInt(e.target.value) || 5) }))}
+                          className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                        />
+                        <span className="text-sm text-gray-600">{recurringOptions.occurrences === 1 ? 'occurrence' : 'occurrences'}</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="recurringEndType"
+                          checked={recurringOptions.endType === 'date'}
+                          onChange={() => setRecurringOptions(prev => ({ ...prev, endType: 'date' }))}
+                          className="text-yellow-500 focus:ring-yellow-400 flex-shrink-0"
+                        />
+                        <span className="text-sm text-gray-700 flex-shrink-0">On date</span>
+                        <input
+                          type="date"
+                          value={recurringOptions.endDate}
+                          disabled={recurringOptions.endType !== 'date'}
+                          min={formData.start_time ? formData.start_time.split('T')[0] : ''}
+                          onChange={(e) => setRecurringOptions(prev => ({ ...prev, endDate: e.target.value }))}
+                          className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                        />
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Occurrences</label>
-                    <input
-                      type="number"
-                      min="2"
-                      max="52"
-                      value={recurringOptions.occurrences}
-                      onChange={(e) => setRecurringOptions(prev => ({ ...prev, occurrences: parseInt(e.target.value) || 5 }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    />
-                  </div>
+
+                  {/* Live summary + occurrence date chips */}
+                  {(() => {
+                    const { frequency, interval, endType, occurrences, endDate } = recurringOptions;
+                    const freqSingular = { daily: 'day', weekly: 'week', monthly: 'month' };
+                    const freqPlural = { daily: 'days', weekly: 'weeks', monthly: 'months' };
+                    const freqWord = interval === 1 ? freqSingular[frequency] : `${interval} ${freqPlural[frequency]}`;
+                    let endLabel = '';
+                    if (endType === 'count') {
+                      endLabel = `${occurrences} times total`;
+                    } else if (endDate) {
+                      endLabel = `until ${new Date(endDate + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+                    }
+                    const chips = [];
+                    if (formData.start_time && endType === 'count' && occurrences > 1) {
+                      let cur = new Date(formData.start_time);
+                      const shown = Math.min(occurrences - 1, 4);
+                      for (let i = 0; i < shown; i++) {
+                        const next = new Date(cur);
+                        if (frequency === 'daily') next.setDate(next.getDate() + interval);
+                        else if (frequency === 'weekly') next.setDate(next.getDate() + interval * 7);
+                        else next.setMonth(next.getMonth() + interval);
+                        chips.push(next);
+                        cur = next;
+                      }
+                    }
+                    return (
+                      <div className="bg-white rounded-lg border border-yellow-200 px-4 py-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <p className="text-sm font-semibold text-gray-800">
+                            Repeats every {freqWord}
+                            {endLabel && <span className="text-gray-500 font-normal"> · {endLabel}</span>}
+                          </p>
+                        </div>
+                        {chips.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            <span className="text-xs text-gray-400 self-center mr-0.5">Next:</span>
+                            {chips.map((d, i) => (
+                              <span key={i} className="text-xs bg-yellow-100 text-yellow-800 rounded-full px-2.5 py-0.5 font-medium">
+                                {d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                              </span>
+                            ))}
+                            {occurrences - 1 > 4 && (
+                              <span className="text-xs text-gray-400 self-center">+{occurrences - 5} more</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                 </div>
               )}
             </div>

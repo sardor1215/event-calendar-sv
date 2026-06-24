@@ -143,6 +143,7 @@ const createTables = async () => {
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS notes TEXT`,
     `ALTER TABLE event_participants ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS color VARCHAR(7)`,
   ];
   for (const migration of migrations) {
     try {
