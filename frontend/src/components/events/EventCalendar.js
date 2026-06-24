@@ -557,6 +557,7 @@ const EventCalendar = ({ refreshTrigger, onEventClick, onDateClick, filters = {}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
             initialView={viewMode}
             headerToolbar={false}
+            firstDay={1}
             height="auto"
             events={formattedEvents}
             eventClick={(info) => { setTooltip(null); handleEventClick(info); }}
